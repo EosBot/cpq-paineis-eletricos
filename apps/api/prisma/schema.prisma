@@ -1,0 +1,502 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum MembershipStatus {
+  ACTIVE
+  INVITED
+  SUSPENDED
+}
+
+enum AttributeValueType {
+  TEXT
+  INTEGER
+  DECIMAL
+  BOOLEAN
+  DATE
+}
+
+enum RuleStatus {
+  DRAFT
+  ACTIVE
+  ARCHIVED
+}
+
+enum RuleVersionStatus {
+  DRAFT
+  APPROVED
+  SUPERSEDED
+}
+
+enum QuoteStatus {
+  DRAFT
+  INTERNAL_REVIEW
+  CALCULATED
+  SENT
+  CUSTOMER_APPROVED
+  REJECTED
+  EXPIRED
+}
+
+enum QuoteVersionTrigger {
+  CALCULATION
+  REOPEN
+  STATUS_CHANGE
+}
+
+enum OrderStatus {
+  CONFIRMED
+  IN_PRODUCTION
+  READY_TO_SHIP
+  SHIPPED
+  DELIVERED
+}
+
+enum ShipmentStatus {
+  PENDING
+  LABEL_CREATED
+  IN_TRANSIT
+  DELIVERED
+  EXCEPTION
+}
+
+model Tenant {
+  id                 String              @id @default(cuid())
+  name               String              @db.VarChar(160)
+  slug               String              @unique @db.VarChar(120)
+  defaultCurrency    String              @db.VarChar(3)
+  defaultPricingContext Json?
+  createdAt          DateTime            @default(now())
+  updatedAt          DateTime            @updatedAt
+  memberships        Membership[]
+  roles              Role[]
+  customerAccounts   CustomerAccount[]
+  commercialContracts CommercialContract[]
+  componentCategories ComponentCategory[]
+  components         Component[]
+  configurations     Configuration[]
+  rules              Rule[]
+  quotes             Quote[]
+  orders             Order[]
+
+  @@index([slug])
+}
+
+model User {
+  id           String       @id @default(cuid())
+  email        String       @unique @db.VarChar(320)
+  firstName    String       @db.VarChar(120)
+  lastName     String       @db.VarChar(120)
+  passwordHash String       @db.VarChar(255)
+  isActive     Boolean      @default(true)
+  createdAt    DateTime     @default(now())
+  updatedAt    DateTime     @updatedAt
+  memberships  Membership[]
+  createdRules Rule[]       @relation("RuleCreatedBy")
+  approvedRuleVersions RuleVersion[] @relation("RuleVersionApprovedBy")
+  createdQuotes Quote[]     @relation("QuoteCreatedBy")
+
+  @@index([email])
+}
+
+model Membership {
+  id         String           @id @default(cuid())
+  tenantId   String
+  userId     String
+  roleId     String
+  status     MembershipStatus @default(INVITED)
+  createdAt  DateTime         @default(now())
+  updatedAt  DateTime         @updatedAt
+  tenant      Tenant          @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  user        User            @relation(fields: [userId], references: [id], onDelete: Cascade)
+  role        Role            @relation(fields: [roleId], references: [id], onDelete: Restrict)
+
+  @@unique([tenantId, userId])
+  @@index([tenantId, roleId])
+  @@index([userId])
+}
+
+model Role {
+  id            String       @id @default(cuid())
+  tenantId      String
+  name          String       @db.VarChar(120)
+  code          String       @db.VarChar(120)
+  permissions   Json
+  isSystemRole  Boolean      @default(false)
+  createdAt     DateTime     @default(now())
+  updatedAt     DateTime     @updatedAt
+  tenant        Tenant       @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  memberships   Membership[]
+
+  @@unique([tenantId, code])
+  @@index([tenantId, name])
+}
+
+model CustomerAccount {
+  id                   String                @id @default(cuid())
+  tenantId             String
+  name                 String                @db.VarChar(160)
+  legalName            String?               @db.VarChar(160)
+  taxId                String?               @db.VarChar(40)
+  isActive             Boolean               @default(true)
+  createdAt            DateTime              @default(now())
+  updatedAt            DateTime              @updatedAt
+  tenant               Tenant                @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  contacts             CustomerContact[]
+  commercialContracts  CommercialContract[]
+  quotes               Quote[]
+  orders               Order[]
+
+  @@index([tenantId, name])
+}
+
+model CustomerContact {
+  id                String          @id @default(cuid())
+  tenantId          String
+  customerAccountId String
+  firstName         String          @db.VarChar(120)
+  lastName          String          @db.VarChar(120)
+  email             String          @db.VarChar(320)
+  phone             String?         @db.VarChar(40)
+  isPrimary         Boolean         @default(false)
+  createdAt         DateTime        @default(now())
+  updatedAt         DateTime        @updatedAt
+  customerAccount   CustomerAccount @relation(fields: [customerAccountId], references: [id], onDelete: Cascade)
+  quotes            Quote[]
+
+  @@index([tenantId, customerAccountId])
+  @@index([tenantId, email])
+}
+
+model CommercialContract {
+  id                    String                @id @default(cuid())
+  tenantId              String
+  customerAccountId     String
+  name                  String                @db.VarChar(160)
+  code                  String                @db.VarChar(120)
+  currencyCode          String                @db.VarChar(3)
+  pricingContext        Json
+  catalogRestriction    Json?
+  validFrom             DateTime?
+  validTo               DateTime?
+  isActive              Boolean               @default(true)
+  createdAt             DateTime              @default(now())
+  updatedAt             DateTime              @updatedAt
+  tenant                Tenant                @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  customerAccount       CustomerAccount       @relation(fields: [customerAccountId], references: [id], onDelete: Cascade)
+  quotes                Quote[]
+
+  @@unique([tenantId, code])
+  @@index([tenantId, customerAccountId])
+}
+
+model ComponentCategory {
+  id                  String                      @id @default(cuid())
+  tenantId            String
+  name                String                      @db.VarChar(120)
+  code                String                      @db.VarChar(120)
+  description         String?                     @db.VarChar(500)
+  createdAt           DateTime                    @default(now())
+  updatedAt           DateTime                    @updatedAt
+  tenant              Tenant                      @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  attributeTemplates  ComponentAttributeTemplate[]
+  components          Component[]
+
+  @@unique([tenantId, code])
+  @@index([tenantId, name])
+}
+
+model ComponentAttributeTemplate {
+  id                  String              @id @default(cuid())
+  tenantId            String
+  componentCategoryId String
+  name                String              @db.VarChar(120)
+  code                String              @db.VarChar(120)
+  valueType           AttributeValueType
+  isRequired          Boolean             @default(false)
+  unit                String?             @db.VarChar(40)
+  sortOrder           Int                 @default(0)
+  createdAt           DateTime            @default(now())
+  updatedAt           DateTime            @updatedAt
+  componentCategory   ComponentCategory   @relation(fields: [componentCategoryId], references: [id], onDelete: Cascade)
+  componentAttributes ComponentAttribute[]
+
+  @@unique([componentCategoryId, code])
+  @@index([tenantId, componentCategoryId])
+}
+
+model Component {
+  id                  String              @id @default(cuid())
+  tenantId            String
+  componentCategoryId String
+  sku                 String              @db.VarChar(120)
+  name                String              @db.VarChar(160)
+  description         String?             @db.VarChar(500)
+  isActive            Boolean             @default(true)
+  createdAt           DateTime            @default(now())
+  updatedAt           DateTime            @updatedAt
+  tenant              Tenant              @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  componentCategory   ComponentCategory   @relation(fields: [componentCategoryId], references: [id], onDelete: Restrict)
+  attributes          ComponentAttribute[]
+  configurationItems  ConfigurationItem[]
+
+  @@unique([tenantId, sku])
+  @@index([tenantId, componentCategoryId])
+  @@index([tenantId, name])
+}
+
+model ComponentAttribute {
+  id                           String                     @id @default(cuid())
+  tenantId                     String
+  componentId                  String
+  componentAttributeTemplateId String
+  valueText                    String?                    @db.VarChar(500)
+  valueInteger                 Int?
+  valueDecimal                 Decimal?                   @db.Decimal(18, 4)
+  valueBoolean                 Boolean?
+  valueDate                    DateTime?
+  createdAt                    DateTime                   @default(now())
+  updatedAt                    DateTime                   @updatedAt
+  component                    Component                  @relation(fields: [componentId], references: [id], onDelete: Cascade)
+  componentAttributeTemplate   ComponentAttributeTemplate @relation(fields: [componentAttributeTemplateId], references: [id], onDelete: Restrict)
+
+  @@unique([componentId, componentAttributeTemplateId])
+  @@index([tenantId, componentId])
+}
+
+model Configuration {
+  id                 String                  @id @default(cuid())
+  tenantId           String
+  quoteId            String                  @unique
+  name               String                  @db.VarChar(160)
+  status             QuoteStatus             @default(DRAFT)
+  graphData          Json?
+  createdAt          DateTime                @default(now())
+  updatedAt          DateTime                @updatedAt
+  tenant             Tenant                  @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  quote              Quote                   @relation(fields: [quoteId], references: [id], onDelete: Cascade)
+  items              ConfigurationItem[]
+  snapshots          ConfigurationSnapshot[]
+
+  @@index([tenantId, status])
+}
+
+model ConfigurationItem {
+  id               String         @id @default(cuid())
+  tenantId         String
+  configurationId  String
+  componentId      String
+  quantity         Decimal        @db.Decimal(18, 4)
+  positionKey      String?        @db.VarChar(120)
+  metadata         Json?
+  createdAt        DateTime       @default(now())
+  updatedAt        DateTime       @updatedAt
+  configuration    Configuration  @relation(fields: [configurationId], references: [id], onDelete: Cascade)
+  component        Component      @relation(fields: [componentId], references: [id], onDelete: Restrict)
+
+  @@index([tenantId, configurationId])
+  @@index([tenantId, componentId])
+}
+
+model ConfigurationSnapshot {
+  id               String           @id @default(cuid())
+  tenantId         String
+  configurationId  String
+  versionNumber    Int
+  snapshotData     Json
+  createdAt        DateTime         @default(now())
+  configuration    Configuration    @relation(fields: [configurationId], references: [id], onDelete: Cascade)
+  quoteVersions    QuoteVersion[]
+  bomVersions      BOMVersion[]
+
+  @@unique([configurationId, versionNumber])
+  @@index([tenantId, configurationId])
+}
+
+model Rule {
+  id                 String        @id @default(cuid())
+  tenantId           String
+  name               String        @db.VarChar(160)
+  code               String        @db.VarChar(120)
+  status             RuleStatus    @default(DRAFT)
+  createdByUserId    String
+  createdAt          DateTime      @default(now())
+  updatedAt          DateTime      @updatedAt
+  tenant             Tenant        @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  createdBy          User          @relation("RuleCreatedBy", fields: [createdByUserId], references: [id], onDelete: Restrict)
+  versions           RuleVersion[]
+
+  @@unique([tenantId, code])
+  @@index([tenantId, status])
+}
+
+model RuleVersion {
+  id                 String             @id @default(cuid())
+  ruleId             String
+  tenantId           String
+  versionNumber      Int
+  status             RuleVersionStatus  @default(DRAFT)
+  definition         Json
+  approvedByUserId   String?
+  approvedAt         DateTime?
+  createdAt          DateTime           @default(now())
+  rule               Rule               @relation(fields: [ruleId], references: [id], onDelete: Cascade)
+  approvedBy         User?              @relation("RuleVersionApprovedBy", fields: [approvedByUserId], references: [id], onDelete: Restrict)
+  quoteVersionRules  QuoteVersionRule[]
+
+  @@unique([ruleId, versionNumber])
+  @@index([tenantId, status])
+}
+
+model Quote {
+  id                   String                 @id @default(cuid())
+  tenantId             String
+  customerAccountId    String
+  primaryContactId     String?
+  commercialContractId String?
+  createdByUserId      String
+  quoteNumber          String                 @db.VarChar(120)
+  title                String                 @db.VarChar(160)
+  status               QuoteStatus            @default(DRAFT)
+  currencyCode         String                 @db.VarChar(3)
+  expiresAt            DateTime?
+  sentAt               DateTime?
+  customerApprovedAt   DateTime?
+  rejectedAt           DateTime?
+  expiredAt            DateTime?
+  createdAt            DateTime               @default(now())
+  updatedAt            DateTime               @updatedAt
+  tenant               Tenant                 @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  customerAccount      CustomerAccount        @relation(fields: [customerAccountId], references: [id], onDelete: Restrict)
+  primaryContact       CustomerContact?       @relation(fields: [primaryContactId], references: [id], onDelete: SetNull)
+  commercialContract   CommercialContract?    @relation(fields: [commercialContractId], references: [id], onDelete: SetNull)
+  createdBy            User                   @relation("QuoteCreatedBy", fields: [createdByUserId], references: [id], onDelete: Restrict)
+  configuration        Configuration?
+  versions             QuoteVersion[]
+  bomVersions          BOMVersion[]
+  orders               Order[]
+
+  @@unique([tenantId, quoteNumber])
+  @@index([tenantId, status])
+  @@index([tenantId, customerAccountId])
+}
+
+model QuoteVersion {
+  id                        String                  @id @default(cuid())
+  tenantId                  String
+  quoteId                   String
+  configurationSnapshotId   String
+  versionNumber             Int
+  trigger                   QuoteVersionTrigger
+  pricingSnapshot           Json
+  totalsSnapshot            Json
+  createdAt                 DateTime                @default(now())
+  quote                     Quote                   @relation(fields: [quoteId], references: [id], onDelete: Cascade)
+  configurationSnapshot     ConfigurationSnapshot   @relation(fields: [configurationSnapshotId], references: [id], onDelete: Restrict)
+  appliedRuleVersions       QuoteVersionRule[]
+  bomVersions               BOMVersion[]
+  orders                    Order[]
+
+  @@unique([quoteId, versionNumber])
+  @@index([tenantId, quoteId])
+}
+
+model QuoteVersionRule {
+  quoteVersionId String
+  ruleVersionId  String
+  createdAt      DateTime     @default(now())
+  quoteVersion   QuoteVersion @relation(fields: [quoteVersionId], references: [id], onDelete: Cascade)
+  ruleVersion    RuleVersion  @relation(fields: [ruleVersionId], references: [id], onDelete: Restrict)
+
+  @@id([quoteVersionId, ruleVersionId])
+}
+
+model BOMVersion {
+  id                      String               @id @default(cuid())
+  tenantId                String
+  quoteId                 String
+  quoteVersionId          String
+  configurationSnapshotId String
+  versionNumber           Int
+  bomData                 Json
+  createdAt               DateTime             @default(now())
+  quote                   Quote                @relation(fields: [quoteId], references: [id], onDelete: Cascade)
+  quoteVersion            QuoteVersion         @relation(fields: [quoteVersionId], references: [id], onDelete: Cascade)
+  configurationSnapshot   ConfigurationSnapshot @relation(fields: [configurationSnapshotId], references: [id], onDelete: Restrict)
+  orders                  Order[]
+
+  @@unique([quoteId, versionNumber])
+  @@index([tenantId, quoteId])
+  @@index([tenantId, quoteVersionId])
+}
+
+model Order {
+  id                   String       @id @default(cuid())
+  tenantId             String
+  orderNumber          String       @db.VarChar(120)
+  quoteId              String
+  quoteVersionId       String
+  customerAccountId    String
+  bomVersionId         String?
+  status               OrderStatus  @default(CONFIRMED)
+  currencyCode         String       @db.VarChar(3)
+  confirmedAt          DateTime     @default(now())
+  producedAt           DateTime?
+  readyToShipAt        DateTime?
+  shippedAt            DateTime?
+  deliveredAt          DateTime?
+  createdAt            DateTime     @default(now())
+  updatedAt            DateTime     @updatedAt
+  tenant               Tenant       @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  quote                Quote        @relation(fields: [quoteId], references: [id], onDelete: Restrict)
+  quoteVersion         QuoteVersion @relation(fields: [quoteVersionId], references: [id], onDelete: Restrict)
+  customerAccount      CustomerAccount @relation(fields: [customerAccountId], references: [id], onDelete: Restrict)
+  bomVersion           BOMVersion?  @relation(fields: [bomVersionId], references: [id], onDelete: SetNull)
+  shipments            Shipment[]
+
+  @@unique([tenantId, orderNumber])
+  @@index([tenantId, status])
+  @@index([tenantId, customerAccountId])
+}
+
+model Shipment {
+  id              String          @id @default(cuid())
+  tenantId        String
+  orderId         String
+  status          ShipmentStatus  @default(PENDING)
+  recipientName   String?         @db.VarChar(160)
+  shippingAddress Json?
+  trackingCode    String?         @db.VarChar(120)
+  carrier         String?         @db.VarChar(120)
+  shippedAt       DateTime?
+  deliveredAt     DateTime?
+  createdAt       DateTime        @default(now())
+  updatedAt       DateTime        @updatedAt
+  order           Order           @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  shippingQuotes  ShippingQuote[]
+
+  @@index([tenantId, orderId])
+}
+
+model ShippingQuote {
+  id            String    @id @default(cuid())
+  tenantId      String
+  shipmentId    String
+  provider      String    @db.VarChar(120)
+  serviceName   String?   @db.VarChar(120)
+  amount        Decimal   @db.Decimal(18, 4)
+  currencyCode  String    @db.VarChar(3)
+  estimatedDays Int?
+  rawQuote      Json?
+  selectedAt    DateTime?
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+  shipment      Shipment  @relation(fields: [shipmentId], references: [id], onDelete: Cascade)
+
+  @@index([tenantId, shipmentId])
+}

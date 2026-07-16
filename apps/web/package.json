@@ -1,0 +1,11 @@
+{
+  "name": "@cpq/web",
+  "private": true,
+  "version": "0.0.1",
+  "scripts": {
+    "build": "echo 'build web not implemented yet'",
+    "dev": "echo 'dev web not implemented yet'",
+    "lint": "echo 'lint web not implemented yet'",
+    "typecheck": "echo 'typecheck web not implemented yet'"
+  }
+}

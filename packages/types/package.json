@@ -1,0 +1,10 @@
+{
+  "name": "@cpq/types",
+  "private": true,
+  "version": "0.0.1",
+  "scripts": {
+    "build": "echo 'build types not implemented yet'",
+    "lint": "echo 'lint types not implemented yet'",
+    "typecheck": "echo 'typecheck types not implemented yet'"
+  }
+}

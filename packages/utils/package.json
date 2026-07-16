@@ -1,0 +1,10 @@
+{
+  "name": "@cpq/utils",
+  "private": true,
+  "version": "0.0.1",
+  "scripts": {
+    "build": "echo 'build utils not implemented yet'",
+    "lint": "echo 'lint utils not implemented yet'",
+    "typecheck": "echo 'typecheck utils not implemented yet'"
+  }
+}

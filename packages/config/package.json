@@ -1,0 +1,10 @@
+{
+  "name": "@cpq/config",
+  "private": true,
+  "version": "0.0.1",
+  "scripts": {
+    "build": "echo 'build config not implemented yet'",
+    "lint": "echo 'lint config not implemented yet'",
+    "typecheck": "echo 'typecheck config not implemented yet'"
+  }
+}
