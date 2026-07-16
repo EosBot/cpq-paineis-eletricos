@@ -1,0 +1,36 @@
+# Dependencies
+node_modules/
+.pnpm-store/
+
+# Build output
+dist/
+build/
+*.tsbuildinfo
+.turbo/
+
+# Environment / secrets
+.env
+.env.*
+!.env.example
+
+# Logs
+*.log
+npm-debug.log*
+pnpm-debug.log*
+
+# OS / editor
+.DS_Store
+.idea/
+.vscode/
+*.swp
+
+# Local tooling (kept out of the SaaS repo; separate project)
+awesome-zoocode-skills/
+
+# Prisma generated client (regenerated via prisma generate)
+**/node_modules/.prisma/
+.agents/
+.claude/
+.roo/
+.mcp/
+awesome-zoocode-skills/
