@@ -7,6 +7,7 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
     signIn: '/login',
   },
   session: { strategy: 'jwt' },
+  trustHost: true,
   callbacks: {
     async jwt({ token, user }) {
       if (user) {
@@ -37,37 +38,40 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
       credentials: {
         email: { label: 'Email', type: 'email' },
         password: { label: 'Senha', type: 'password' },
-        tenantId: { label: 'Tenant ID', type: 'text' },
       },
       async authorize(credentials) {
         if (!credentials?.email || !credentials?.password) return null;
 
         try {
-          const response = await fetch(`${env.INTERNAL_API_URL}/auth/login`, {
+          const apiUrl = process.env.INTERNAL_API_URL ?? env.INTERNAL_API_URL;
+          const response = await fetch(`${apiUrl}/auth/login`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
               email: credentials.email as string,
               password: credentials.password as string,
-              tenantId: (credentials.tenantId as string) || undefined,
             }),
           });
 
-          if (!response.ok) return null;
+          if (!response.ok) {
+            console.error('Auth API error:', response.status, await response.text().catch(() => ''));
+            return null;
+          }
 
           const data = await response.json();
           return {
-            id: data.sub ?? '',
+            id: data.sub ?? data.id ?? '',
             email: (credentials.email as string),
-            firstName: '',
-            lastName: '',
+            firstName: data.firstName ?? '',
+            lastName: data.lastName ?? '',
             accessToken: data.accessToken,
             refreshToken: data.refreshToken,
             tenantId: data.tenantId ?? '',
             roleCode: data.roleCode ?? '',
             isSuperAdmin: data.isSuperAdmin ?? false,
-          };
-        } catch {
+          } as any;
+        } catch (error) {
+          console.error('Auth error:', error);
           return null;
         }
       },

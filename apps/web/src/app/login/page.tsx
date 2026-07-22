@@ -10,7 +10,6 @@ export default function LoginPage() {
   const router = useRouter();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const [tenantId, setTenantId] = useState('');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
 
@@ -19,22 +18,26 @@ export default function LoginPage() {
     setError('');
     setLoading(true);
 
-    const result = await signIn('credentials', {
-      email,
-      password,
-      tenantId: tenantId || undefined,
-      redirect: false,
-    });
+    try {
+      const result = await signIn('credentials', {
+        email,
+        password,
+        redirect: false,
+      });
 
-    setLoading(false);
+      setLoading(false);
 
-    if (result?.error) {
-      setError('Credenciais inválidas. Verifique email e senha.');
-      return;
+      if (result?.error) {
+        setError('Credenciais inválidas. Verifique email e senha.');
+        return;
+      }
+
+      router.push('/configure');
+      router.refresh();
+    } catch {
+      setLoading(false);
+      setError('Erro ao fazer login. Tente novamente.');
     }
-
-    router.push('/configure');
-    router.refresh();
   }
 
   return (
@@ -46,7 +49,6 @@ export default function LoginPage() {
         className="w-full max-w-sm"
       >
         <div className="rounded-xl border bg-card p-8 shadow-sm">
-          {/* Logo / Title */}
           <div className="mb-8 text-center">
             <h1 className="text-2xl font-bold tracking-tight">CPQ Painéis</h1>
             <p className="mt-2 text-sm text-muted-foreground">
@@ -85,20 +87,6 @@ export default function LoginPage() {
               />
             </div>
 
-            <div>
-              <label htmlFor="tenant" className="mb-1 block text-xs font-medium text-muted-foreground">
-                Tenant ID <span className="text-muted-foreground/60">(opcional)</span>
-              </label>
-              <input
-                id="tenant"
-                type="text"
-                value={tenantId}
-                onChange={(e) => setTenantId(e.target.value)}
-                placeholder="Deixe vazio para auto-detectar"
-                className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring"
-              />
-            </div>
-
             {error && (
               <p className="rounded-md bg-destructive/10 px-3 py-2 text-sm text-destructive">
                 {error}
@@ -109,7 +97,6 @@ export default function LoginPage() {
               {loading ? 'Entrando...' : 'Entrar'}
             </Button>
           </form>
-
 
         </div>
       </motion.div>

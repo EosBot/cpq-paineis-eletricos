@@ -1,8 +1,10 @@
-# CPQ Painéis Elétricos — Estado do Projeto (Julho 2026)
+# CPQ Marketplace — Estado do Projeto (Julho 2026)
 
 ## Visão Geral
 
-SaaS multi-tenant de **Configure-Price-Quote (CPQ)** para fabricantes de painéis elétricos. Monorepo Turbo com NestJS (backend) e Next.js 15 (frontend).
+SaaS multi-tenant de **marketplace para fabricantes de painéis elétricos e componentes**. Monorepo com NestJS (backend) e Next.js 15 (frontend com 3 apps).
+
+O **CPQ é um módulo** dentro do marketplace — uma funcionalidade que permite ao cliente configurar painéis personalizados. O core do sistema é o marketplace com carrinho, checkout e ERP do vendedor.
 
 ## Stack
 
@@ -11,10 +13,11 @@ SaaS multi-tenant de **Configure-Price-Quote (CPQ)** para fabricantes de painéi
 | **Backend** | NestJS 10 + Prisma 5 + PostgreSQL 16 |
 | **Frontend** | Next.js 15 (App Router) + Tailwind + shadcn/ui |
 | **Auth** | NextAuth v5 (Credentials Provider) + JWT |
-| **State** | Zustand (builder local) + React Query (server data) |
-| **3D** | Three.js + React Three Fiber + drei |
-| **Animações** | Framer Motion (springs, Apple-style) |
+| **State** | Zustand (local) + React Query (server data) |
+| **Cache** | Redis 7 |
 | **Validação** | class-validator + pipes NestJS |
+| **Container** | Docker + Docker Compose |
+| **Reverse Proxy** | nginx |
 
 ---
 
@@ -22,16 +25,58 @@ SaaS multi-tenant de **Configure-Price-Quote (CPQ)** para fabricantes de painéi
 
 ```
 apps/
-  api/          # NestJS API (auth, catalog, builder, quotes, erp, lgpd, super-admin)
-  web/          # Next.js frontend (builder, admin, login)
+  api/          # NestJS API (auth, marketplace, cart, orders, cpq, seller, admin)
+  web/          # Next.js frontend (storefront + seller ERP + admin)
 packages/
-  ui/           # (placeholder)
-  config/       # (placeholder)
-  shared/       # (placeholder)
+  ui/           # (placeholder) Shared component library
+  config/       # (placeholder) Shared configs (ESLint, TS)
+  shared/       # (placeholder) Shared types and utilities
 docs/
-  research/     # Pesquisas de mercado
-  adr/          # Architecture Decision Records
+  adr/          # 13 Architecture Decision Records
+  architecture/ # Diagrams (C4 + ER) + reference
+  research/     # Market research and patterns
 ```
+
+---
+
+## URLs de Desenvolvimento
+
+| Serviço | URL |
+|---------|-----|
+| Storefront | http://localhost |
+| Backend API | http://localhost:3000/api/v1 |
+| Swagger Docs | http://localhost:3000/api/docs |
+| Prisma Studio | `npx prisma studio` |
+
+---
+
+## Módulos Backend (Implementados)
+
+| Módulo | Prefixo | Status | Descrição |
+|--------|---------|--------|-----------|
+| Auth | `/auth` | ✅ | Login, refresh, validate JWT |
+| Marketplace | `/products`, `/categories` | 🚧 | Catálogo de produtos (standard + CPQ) |
+| Cart | `/cart` | 🚧 | Carrinho de compras |
+| Orders | `/orders` | 🚧 | Pedidos e lifecycle |
+| CPQ | `/cpq` | ✅ | Configurações, componentes, pricing |
+| Seller ERP | `/seller` | 🚧 | Painel do vendedor |
+| Admin | `/admin` | ✅ | Gestão da plataforma |
+| Platform | `/plans`, `/billing` | ✅ | Assinaturas e billing |
+| ERP | `/erp` | ✅ | Fiscal, financeiro, estoque, compras |
+| Privacy | `/privacy` | ✅ | LGPD compliance |
+| Tenancy | (global) | ✅ | Multi-tenant isolation (RLS) |
+
+Legenda: ✅ Implementado | 🚧 Em desenvolvimento | 📋 Planejado
+
+---
+
+## Frontend Apps
+
+| App | Rota | Status | Descrição |
+|-----|------|--------|-----------|
+| Storefront | `/` | ✅ | Página inicial, catálogo, carrinho, checkout |
+| Seller ERP | `/seller` | 📋 | Dashboard, produtos, pedidos, estoque |
+| Admin | `/admin` | 🚧 | Gestão de tenants, usuários, billing |
 
 ---
 
@@ -41,133 +86,63 @@ docs/
 |--------|-------|-------|--------|
 | **Super Admin** | super@cpq.com.br | Super@2024! | Plataforma (todos) |
 | **Demo Admin** | admin@paineisdemo.com | SenhaForte@123 | demo-paineis |
-| **Demo Engineer** | engenheiro@paineisdemo.com | Eng@2024 | demo-paineis |
-| **Demo Sales** | vendas@paineisdemo.com | Vendas@2024 | demo-paineis |
-| **Mega Painéis** | admin@megapaineis.com | Mega@2024 | mega-paineis |
 
 ---
 
-## URLs de Desenvolvimento
-
-| Serviço | URL |
-|---------|-----|
-| Frontend | http://localhost:3001 |
-| Backend API | http://localhost:3000/api/v1 |
-| Swagger Docs | http://localhost:3000/api/docs |
-| Prisma Studio | `npx prisma studio` |
-
----
-
-## Módulos Backend (Registrados)
-
-| Módulo | Prefixo | Endpoints |
-|--------|---------|-----------|
-| Auth | `/auth` | login, refresh, validate |
-| Catalog | `/catalog` | components, component-categories |
-| PanelBuilder | `/panel-builder` | catalog, templates, regions, configurations, rails, circuits, placements, pricing |
-| BuilderIntegration | `/panel-builder/integration` | submit-to-quote, submit-for-review |
-| Configurations | `/configurations` | create, list, submit-for-review |
-| Quotes | `/quotes` | create, calculate, send, customer-approve, reopen |
-| BOM | `/bom` | versions |
-| Orders | `/orders` | convert, advance |
-| Shipments | `/shipments` | full lifecycle |
-| Pricing | `/pricing` | context resolution |
-| Platform | `/plans`, `/subscriptions`, `/billing` | Stripe integration |
-| ERP | `/erp` | sales, inventory, procurement, fiscal, financial |
-| SuperAdmin | `/super-admin` | stats, tenants, users |
-| Privacy (LGPD) | `/privacy` | config, consents, data-requests, export, delete, audit |
-
----
-
-## Frontend Routes
-
-| Rota | Componente | Proteção |
-|------|-----------|----------|
-| `/login` | LoginPage | Público |
-| `/configure` | BuilderWizard | Autenticado |
-| `/configure/[id]` | BuilderWizard | Autenticado |
-| `/admin` | SuperAdminDashboard | Super Admin |
-| `/api/auth/[...nextauth]` | NextAuth handler | Público |
-
----
-
-## Fluxo de Builder (Frontend)
+## Modelo de Dados (Principais Entidades)
 
 ```
-Step 1: Projeto → tipo, tensão, fases, ambiente
-Step 2: Invólucro → seleção visual de enclosure
-Step 3: Circuitos → definição de circuitos elétricos
-Step 4: Componentes → catálogo + layout DIN rail
-Step 5: Revisão → 3D preview + BOM + pricing
-[ ] Botão "Gerar Quote" → integração pendente
+Tenant (Lojista)
+├── User (com Membership → Role)
+├── Product (Standard ou CPQ_CONFIGURABLE)
+├── Category
+├── Cart + CartItem
+├── Customer
+├── Order + OrderItem
+├── InventoryItem + StockMovement
+├── FinancialAccount + FinancialTransaction
+└── CPQ Configuration + Components
 ```
 
 ---
 
-## Pesquisa de Mercado (docs/research/)
+## Roadmap
 
-| Documento | Conteúdo |
-|-----------|----------|
-| `panel-builder-research.md` | 8 etapas montagem, normas (NR-10, NBR 5410, IEC 61439), competidores |
-| `electrical-market-brazil.md` | 1472 linhas: componentes reais, preços BRL, tensão por estado, clima |
+### Fase 1 — Marketplace Foundation 🚧
+- [x] Multi-tenant isolation (RLS + middleware)
+- [x] Auth system (JWT + NextAuth)
+- [x] CPQ module (configurações, componentes, pricing)
+- [ ] Product catalog (standard + CPQ configurable)
+- [ ] Shopping cart
+- [ ] Checkout (mocked payment)
+- [ ] Order lifecycle
+- [ ] Storefront frontend (home, catalog, product page)
+- [ ] CPQ integration in product page + cart
 
----
+### Fase 2 — Seller ERP 📋
+- [ ] Seller registration (self-service)
+- [ ] Product management (CRUD)
+- [ ] Order management
+- [ ] Inventory management
+- [ ] Customer management
+- [ ] Financial module
+- [ ] Reports and analytics
 
-## Seed Data
+### Fase 3 — Admin Platform 🚧
+- [ ] Tenant management (CRUD)
+- [ ] User management
+- [ ] Subscription/billing management
+- [ ] Platform analytics
+- [ ] System settings
 
-- **11 regiões** brasileiras (tensão/clima/IP por estado)
-- **8 panel templates** (CCM, QGBT, Automação, VFD, etc.)
-- **84 componentes universais** genéricos (reutilizáveis por marca)
-- **10 business rules** (clearance, IP, sizing, pricing, thermal)
-- **2 tenants** de demonstração
-- **4 usuários** + Super Admin
-
----
-
-## LGPD (Lei 13.709/2018)
-
-### Backend (implementado)
-- `TenantPrivacyConfig` — DPO, política, retenção
-- `ConsentRecord` — consentimento por finalidade (Art. 7, 8)
-- `DataSubjectRequest` — requisições do titular (Art. 18)
-- `PrivacyAuditLog` — auditoria de acesso
-- Exportação de dados (portabilidade Art. 18, V)
-- Anonimização/exclusão (Art. 15, 16)
-
-### Frontend (pendente)
-- [ ] Consent banner (cookies)
-- [ ] Privacy settings page
-- [ ] Data subject request form
-
----
-
-## Próximos Passos (Roadmap)
-
-### Fase B — Builder + API Integration
-- [ ] Consumir `GET /panel-builder/catalog` (catálogo real)
-- [ ] Consumir `GET /panel-builder/regions` (dados por estado)
-- [ ] Consumir `GET /panel-builder/templates` (templates prontos)
-- [ ] Salvar configuração via `POST /panel-builder/configurations`
-- [ ] Calcular pricing via `GET /panel-builder/configurations/:id/pricing`
-
-### Fase C — LGPD Frontend
-- [ ] Consent banner component
-- [ ] Privacy settings page (`/privacy`)
-- [ ] Data subject request form
-- [ ] Cookie consent granular
-
-### Fase D — Super Admin Funcional
-- [ ] Conectar dashboard a `GET /super-admin/stats`
-- [ ] Tabela de tenants com dados reais
-- [ ] Criar/desativar tenants
-- [ ] Buscar e gerenciar usuários
-
-### Fase E — Polish
-- [ ] Toast notifications (Sonner)
-- [ ] Loading skeletons
-- [ ] Error boundaries
-- [ ] Empty states
+### Fase 4 — Integration & Polish 📋
+- [ ] Payment gateway integration
+- [ ] Email notifications
+- [ ] File uploads (product images)
 - [ ] E2E tests (Playwright)
+- [ ] CI/CD pipeline
+- [ ] VPS deployment
+- [ ] Monitoring (Prometheus/Grafana)
 
 ---
 
@@ -180,22 +155,22 @@ pnpm run build            # Build completo
 pnpm run typecheck        # Typecheck completo
 pnpm run lint             # Lint
 
+# Docker
+docker compose up -d      # Subir todos os containers
+docker compose down       # Parar tudo
+docker compose logs -f api  # Ver logs da API
+
 # Backend (apps/api)
 cd apps/api
 npx prisma migrate dev    # Criar/aplicar migration
 npx prisma generate       # Gerar Prisma Client
 npx prisma db push        # Sync schema (dev)
 npx prisma studio         # GUI do banco
-npx ts-node --project tsconfig.seed.json prisma/seed.ts  # Popular dados
+pnpm run test             # Testes
 
-# Testes
-DATABASE_URL='postgresql://cpq:cpq@localhost:5432/cpq' npx jest
-
-# Frontend (apps/web)
-cd apps/web
-npx next dev -p 3001      # Dev server
-npx next build            # Production build
-npx tsc --noEmit          # Typecheck
+# Typecheck
+cd apps/api && pnpm run typecheck
+cd apps/web && pnpm run typecheck
 ```
 
 ---
@@ -207,48 +182,46 @@ npx tsc --noEmit          # Typecheck
 DATABASE_URL=postgresql://cpq:cpq@localhost:5432/cpq
 JWT_ACCESS_SECRET=<gerar>
 JWT_REFRESH_SECRET=<gerar>
-STRIPE_SECRET_KEY=sk_test_...
-STRIPE_WEBHOOK_SECRET=whsec_...
-PLATFORM_DOMAIN=localhost:3000
+PORT=3000
+CORS_ORIGIN=http://localhost
+REDIS_URL=redis://localhost:6379
 ```
 
 ### Frontend (apps/web/.env.local)
 ```
-NEXTAUTH_URL=http://localhost:3001
+NEXTAUTH_URL=http://localhost
 NEXTAUTH_SECRET=<gerar com openssl rand -base64 32>
 API_BASE_URL=http://localhost:3000/api/v1
-NEXT_PUBLIC_APP_NAME=CPQ Painéis
+INTERNAL_API_URL=http://api:3000/api/v1
+NEXT_PUBLIC_APP_NAME=CPQ Marketplace
 ```
 
 ---
 
-## Skills Utilizadas neste Projeto
+## Decisões Arquiteturais (ADRs)
 
-| Skill | Aplicação |
-|-------|-----------|
-| `frontend-design` | Identidade visual, tipografia, 3-color rule |
-| `apple-design` | Springs, press feedback, interruptibilidade |
-| `emil-design-eng` | Animation decision framework |
-| `animation-vocabulary` | Glossário de motion |
-| `viral-product-principles` | 32 princípios de conversão |
-| `revenue-centric-design` | Value first, single CTA, defaults |
-| `codebase-design` | Deep modules, seams, interfaces |
-| `tdd` | Red-green loop, vertical slices |
-| `webapp-testing` | Playwright E2E |
-| `domain-modeling` | Glossário ubíquo, ADRs |
-| `implement` | TDD implementation pattern |
+| ADR | Título | Status |
+|-----|--------|--------|
+| 0001 | Multi-Tenant Marketplace Isolation | Accepted |
+| 0002 | Storefront Pública | Accepted |
+| 0003 | Product Catalog | Accepted |
+| 0004 | Cart & Checkout | Accepted |
+| 0005 | Order Lifecycle | Accepted |
+| 0006 | Seller ERP Panel | Accepted |
+| 0007 | CPQ Module Within Marketplace | Accepted |
+| 0008 | Admin Platform | Accepted |
+| 0009 | Concurrency & Consistency | Accepted |
+| 0010 | Security Architecture | Accepted |
+| 0011 | API Design (REST) | Accepted |
+| 0012 | Frontend Architecture (Three Apps) | Accepted |
+| 0013 | DevOps & Infrastructure | Accepted |
 
 ---
 
 ## Notas Importantes
 
 1. **Multi-tenant**: Todo dado é isolado por `tenantId`. O interceptor global garante escopo.
-2. **Componentes genéricos**: Os 84 componentes são visuais universais. O cliente cadastra marca/preço por cima.
-3. **SVGs**: 18 ícones em `public/components/` — ainda não integrados no frontend.
-4. **LGPD**: Backend completo, frontend pendente (banner + privacy page).
-5. **Composio**: Firecrawl conectado para web scraping de preços (confirmar antes de usar).
-6. **Stripe**: Billing module implementado mas não testado em produção.
-
----
-
-*Documento gerado em Julho 2026 — Projeto em desenvolvimento ativo.*
+2. **CPQ é módulo**: O builder de painéis é uma feature dentro do marketplace, não o produto principal.
+3. **3 apps frontend**: Storefront (público), Seller ERP (lojista), Admin (plataforma).
+4. **Pagamento mockado**: Checkout cria pedido sem processar pagamento real.
+5. **Isolamento**: Cada lojista vê apenas seus próprios dados via RLS.

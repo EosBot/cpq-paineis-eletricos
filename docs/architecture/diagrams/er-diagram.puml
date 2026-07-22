@@ -1,0 +1,191 @@
+@startuml ER-Diagram
+title Entity Relationship — CPQ Marketplace Core
+
+entity "Tenant" as tenant {
+  * id : STRING <<PK>>
+  --
+  * name : VARCHAR(160)
+  * slug : VARCHAR(120) <<UNIQUE>>
+  * defaultCurrency : VARCHAR(3)
+  planId : STRING
+  status : TenantStatus
+}
+
+entity "User" as user {
+  * id : STRING <<PK>>
+  --
+  * email : VARCHAR(320) <<UNIQUE>>
+  * passwordHash : VARCHAR(255)
+  * firstName : VARCHAR(120)
+  * lastName : VARCHAR(120)
+  * isActive : BOOLEAN
+  isSuperAdmin : BOOLEAN
+}
+
+entity "Membership" as membership {
+  * id : STRING <<PK>>
+  --
+  * tenantId : STRING <<FK>>
+  * userId : STRING <<FK>>
+  * roleId : STRING <<FK>>
+  status : MembershipStatus
+}
+
+entity "Role" as role {
+  * id : STRING <<PK>>
+  --
+  * tenantId : STRING <<FK>>
+  * name : VARCHAR(120)
+  * code : VARCHAR(120)
+  permissions : JSON
+}
+
+entity "Product" as product {
+  * id : STRING <<PK>>
+  --
+  * tenantId : STRING <<FK>>
+  * name : VARCHAR(160)
+  * slug : VARCHAR(120)
+  description : TEXT
+  type : ProductType
+  price : DECIMAL(18,4)
+  categoryId : STRING <<FK>>
+  isActive : BOOLEAN
+  cpqTemplate : JSON
+}
+
+entity "Category" as category {
+  * id : STRING <<PK>>
+  --
+  * tenantId : STRING <<FK>>
+  * name : VARCHAR(120)
+  * slug : VARCHAR(120)
+  parentId : STRING <<FK>>
+}
+
+entity "Cart" as cart {
+  * id : STRING <<PK>>
+  --
+  customerId : STRING
+  sessionId : STRING <<UNIQUE>>
+  status : CartStatus
+}
+
+entity "CartItem" as cart_item {
+  * id : STRING <<PK>>
+  --
+  * cartId : STRING <<FK>>
+  * productId : STRING <<FK>>
+  * quantity : INTEGER
+  unitPrice : DECIMAL(18,4)
+  configurationId : STRING
+  configurationData : JSON
+}
+
+entity "Customer" as customer {
+  * id : STRING <<PK>>
+  --
+  * tenantId : STRING <<FK>>
+  * email : VARCHAR(320)
+  firstName : VARCHAR(120)
+  lastName : VARCHAR(120)
+  phone : VARCHAR(40)
+  taxId : VARCHAR(40)
+  address : JSON
+}
+
+entity "Order" as order {
+  * id : STRING <<PK>>
+  --
+  * tenantId : STRING <<FK>>
+  * orderNumber : VARCHAR(120) <<UNIQUE>>
+  * customerId : STRING <<FK>>
+  status : OrderStatus
+  subtotal : DECIMAL(18,4)
+  taxAmount : DECIMAL(18,4)
+  discountAmount : DECIMAL(18,4)
+  totalAmount : DECIMAL(18,4)
+  shippingAddress : JSON
+  trackingCode : VARCHAR(120)
+}
+
+entity "OrderItem" as order_item {
+  * id : STRING <<PK>>
+  --
+  * orderId : STRING <<FK>>
+  * productId : STRING <<FK>>
+  productName : VARCHAR(160)
+  quantity : INTEGER
+  unitPrice : DECIMAL(18,4)
+  totalPrice : DECIMAL(18,4)
+  configurationId : STRING
+  configurationData : JSON
+}
+
+entity "InventoryItem" as inventory {
+  * id : STRING <<PK>>
+  --
+  * tenantId : STRING <<FK>>
+  * productId : STRING <<FK>>
+  * locationId : STRING <<FK>>
+  quantity : DECIMAL(18,4)
+  reservedQuantity : DECIMAL(18,4)
+  averageCost : DECIMAL(18,4)
+  minimumStock : DECIMAL(18,4)
+}
+
+entity "StockMovement" as stock_movement {
+  * id : STRING <<PK>>
+  --
+  * tenantId : STRING <<FK>>
+  * productId : STRING <<FK>>
+  * locationId : STRING <<FK>>
+  type : StockMovementType
+  quantity : DECIMAL(18,4)
+  unitCost : DECIMAL(18,4)
+  referenceType : VARCHAR(60)
+  referenceId : VARCHAR(120)
+}
+
+entity "FinancialAccount" as financial_account {
+  * id : STRING <<PK>>
+  --
+  * tenantId : STRING <<FK>>
+  * code : VARCHAR(40)
+  * name : VARCHAR(160)
+  type : AccountType
+  parentAccountId : STRING <<FK>>
+}
+
+entity "FinancialTransaction" as financial_transaction {
+  * id : STRING <<PK>>
+  --
+  * tenantId : STRING <<FK>>
+  * accountId : STRING <<FK>>
+  * type : VARCHAR(40)
+  amount : DECIMAL(18,4)
+  direction : Direction
+  dueDate : DATE
+  paidDate : DATE
+  description : TEXT
+}
+
+tenant ||--o{ membership : has
+tenant ||--o{ role : defines
+user ||--o{ membership : has
+role ||--o{ membership : assigned
+tenant ||--o{ product : sells
+tenant ||--o{ category : organizes
+category ||--o{ product : contains
+cart ||--o{ cart_item : contains
+product ||--o{ cart_item : "added as"
+customer ||--o{ cart : owns
+customer ||--o{ order : places
+order ||--o{ order_item : contains
+product ||--o{ order_item : "ordered as"
+tenant ||--o{ inventory : tracks
+tenant ||--o{ stock_movement : records
+tenant ||--o{ financial_account : has
+tenant ||--o| financial_transaction : records
+
+@enduml

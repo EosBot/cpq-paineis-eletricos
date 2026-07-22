@@ -1,0 +1,28 @@
+@startuml C4-Container
+!include https://raw.githubusercontent.com/plantuml-stdlib/C4-Context/main/C4_Container.puml
+
+title Container Diagram — CPQ Marketplace
+
+Person(customer, "Customer", "End user")
+Person(seller, "Seller", "Store owner")
+Person(admin, "Admin", "Platform administrator")
+
+System_Boundary(marketplace, "CPQ Marketplace") {
+    Container(storefront, "Storefront", "Next.js 15", "Public-facing storefront.\nProduct catalog, cart, checkout,\ncustomer account, CPQ tab.")
+    Container(seller_erp, "Seller ERP", "Next.js 15", "Seller dashboard.\nProducts, orders, inventory,\ncustomers, financial, reports.")
+    Container(admin_panel, "Admin Panel", "Next.js 15", "Platform administration.\nTenants, users, billing, analytics.")
+    Container(api, "API", "NestJS 10", "REST API.\nAuth, catalog, cart, orders,\nCPQ, seller ERP, admin.")
+    ContainerDb(database, "PostgreSQL", "PostgreSQL 16", "Primary data store.\nMulti-tenant with RLS.")
+    ContainerDb(cache, "Redis", "Redis 7", "Cache, sessions, rate limiting.")
+}
+
+Rel(customer, storefront, "HTTPS", "Browses, configures, buys")
+Rel(seller, seller_erp, "HTTPS", "Manages store")
+Rel(admin, admin_panel, "HTTPS", "Manages platform")
+Rel(storefront, api, "HTTPS/JSON", "API calls")
+Rel(seller_erp, api, "HTTPS/JSON", "API calls")
+Rel(admin_panel, api, "HTTPS/JSON", "API calls")
+Rel(api, database, "TCP", "Queries")
+Rel(api, cache, "TCP", "Cache/Session")
+
+@enduml

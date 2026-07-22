@@ -1,0 +1,30 @@
+@startuml C4-Component
+!include https://raw.githubusercontent.com/plantuml-stdlib/C4-Context/main/C4_Component.puml
+
+title Component Diagram — CPQ Marketplace API
+
+Container(api, "API", "NestJS", "REST API")
+
+Component(auth, "Auth Module", "NestJS", "JWT authentication, refresh tokens")
+Component(marketplace, "Marketplace Module", "NestJS", "Products, categories, cart, orders")
+Component(cpq, "CPQ Module", "NestJS", "Configurations, components, pricing")
+Component(seller, "Seller Module", "NestJS", "Seller ERP endpoints")
+Component(admin, "Admin Module", "NestJS", "Platform management")
+Component(tenancy, "Tenancy Middleware", "NestJS", "RLS scope injection")
+Component(rbac, "RBAC Guard", "NestJS", "Role-based access control")
+ComponentDb(prisma, "Prisma", "Prisma Client", "Database ORM")
+
+Rel(auth, prisma, "Uses")
+Component_Ref(auth, tenancy, "Uses")
+Component_Ref(marketplace, tenancy, "Uses")
+Component_Ref(cpq, tenancy, "Uses")
+Component_Ref(seller, tenancy, "Uses")
+Component_Ref(admin, tenancy, "Uses")
+Rel(marketplace, prisma, "Uses")
+Rel(cpq, prisma, "Uses")
+Rel(seller, prisma, "Uses")
+Rel(admin, prisma, "Uses")
+Rel(tenancy, prisma, "Injects tenantId")
+Rel(rbac, auth, "Validates roles")
+
+@enduml
