@@ -18,10 +18,12 @@ import { ShipmentsModule } from './shipments/shipments.module';
 import { PanelBuilderModule } from './modules/panel-builder/panel-builder.module';
 import { PrivacyModule } from './modules/privacy/privacy.module';
 import { SuperAdminModule } from './modules/super-admin/super-admin.module';
+import { HealthController } from './common/health/health.controller';
 import { TenantScopeInterceptor } from './tenancy/tenant-scope.interceptor';
 import { CorrelationIdInterceptor } from './common/correlation-id/correlation-id.interceptor';
 
 @Module({
+  controllers: [HealthController],
   imports: [
     ConfigModule.forRoot({
       isGlobal: true,

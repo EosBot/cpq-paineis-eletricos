@@ -20,7 +20,12 @@ class ApiClient {
   }
 
   private buildUrl(path: string, params?: Record<string, string | number | boolean | undefined>): string {
-    const url = new URL(path.startsWith('http') ? path : `${env.API_BASE_URL}${path}`);
+    const baseUrl = env.API_BASE_URL.startsWith('http')
+      ? env.API_BASE_URL
+      : typeof window !== 'undefined'
+        ? ''
+        : 'http://localhost:3000';
+    const url = new URL(path.startsWith('http') ? path : `${baseUrl}${env.API_BASE_URL}${path}`);
     if (params) {
       Object.entries(params).forEach(([key, value]) => {
         if (value !== undefined && value !== null) {

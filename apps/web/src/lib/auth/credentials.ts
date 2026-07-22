@@ -43,7 +43,7 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
         if (!credentials?.email || !credentials?.password) return null;
 
         try {
-          const response = await fetch(`${env.API_BASE_URL}/auth/login`, {
+          const response = await fetch(`${env.INTERNAL_API_URL}/auth/login`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({

@@ -1,10 +1,10 @@
-import { Injectable, OnModuleInit } from '@nestjs/common';
+import { Injectable, OnModuleDestroy, OnModuleInit } from '@nestjs/common';
 import { Prisma, PrismaClient } from '@prisma/client';
 import { applyTenantScope } from '../tenancy/prisma-tenant-scope';
 import { getTenantContextFromStorage } from '../tenancy/tenant-context.storage';
 
 @Injectable()
-export class PrismaService extends PrismaClient implements OnModuleInit {
+export class PrismaService extends PrismaClient implements OnModuleInit, OnModuleDestroy {
   async onModuleInit(): Promise<void> {
     await this.$connect();
 
@@ -12,6 +12,10 @@ export class PrismaService extends PrismaClient implements OnModuleInit {
       const tenantContext = getTenantContextFromStorage();
       return next(applyTenantScope(params, tenantContext));
     });
+  }
+
+  async onModuleDestroy(): Promise<void> {
+    await this.$disconnect();
   }
 
   async $transactionWithRLS<T>(

@@ -6,6 +6,15 @@ import { raw } from 'body-parser';
 import { AppModule } from './app.module';
 import { StructuredLogger } from './common/logging/structured.logger';
 
+const REQUIRED_ENV = ['DATABASE_URL', 'JWT_ACCESS_SECRET', 'JWT_REFRESH_SECRET'];
+
+function validateEnv(): void {
+  const missing = REQUIRED_ENV.filter((key) => !process.env[key]);
+  if (missing.length > 0) {
+    throw new Error(`Missing required environment variables: ${missing.join(', ')}`);
+  }
+}
+
 function resolveCorsOrigins(): string | string[] | boolean {
   const raw = process.env.CORS_ORIGIN;
   if (!raw) {
@@ -39,7 +48,10 @@ function setupSwagger(app: INestApplication): void {
 }
 
 async function bootstrap(): Promise<void> {
+  validateEnv();
+
   const isProduction = process.env.NODE_ENV === 'production';
+  const port = parseInt(process.env.PORT || '3000', 10);
 
   const app = await NestFactory.create(AppModule, {
     bufferLogs: true,
@@ -72,13 +84,13 @@ async function bootstrap(): Promise<void> {
     }),
   );
 
-
+  app.enableShutdownHooks();
 
   if (!isProduction) {
     setupSwagger(app);
   }
 
-  await app.listen(3000);
+  await app.listen(port);
 }
 
 void bootstrap();
