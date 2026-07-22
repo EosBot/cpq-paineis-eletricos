@@ -64,13 +64,9 @@ export class BillingController {
   @Post('webhook')
   @HttpCode(HttpStatus.OK)
   @Header('Content-Type', 'application/json')
-  async handleWebhook(@Req() req: RawBodyRequest<IncomingMessage>) {
+  async handleWebhook(@Req() req: any) {
     const signature = (req.headers['stripe-signature'] as string) ?? '';
-    const payload = req.rawBody;
-
-    if (!payload) {
-      throw new BadRequestException('Missing raw body for webhook verification.');
-    }
+    const payload = req.body ? Buffer.from(JSON.stringify(req.body)) : Buffer.alloc(0);
 
     await this.billingService.handleWebhook(payload, signature);
 

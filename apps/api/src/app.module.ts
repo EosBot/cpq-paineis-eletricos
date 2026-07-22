@@ -21,6 +21,7 @@ import { SuperAdminModule } from './modules/super-admin/super-admin.module';
 import { HealthController } from './common/health/health.controller';
 import { TenantScopeInterceptor } from './tenancy/tenant-scope.interceptor';
 import { CorrelationIdInterceptor } from './common/correlation-id/correlation-id.interceptor';
+import { TestModule } from './test/test.module';
 
 @Module({
   controllers: [HealthController],
@@ -50,6 +51,7 @@ import { CorrelationIdInterceptor } from './common/correlation-id/correlation-id
     SuperAdminModule,
     PrivacyModule,
     PanelBuilderModule,
+    TestModule,
   ],
   providers: [
     {

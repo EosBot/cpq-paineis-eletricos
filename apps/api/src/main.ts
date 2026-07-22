@@ -2,7 +2,6 @@ import { INestApplication, ValidationPipe } from '@nestjs/common';
 import { NestFactory } from '@nestjs/core';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 import helmet from 'helmet';
-import { raw } from 'body-parser';
 import { AppModule } from './app.module';
 import { StructuredLogger } from './common/logging/structured.logger';
 
@@ -66,15 +65,6 @@ async function bootstrap(): Promise<void> {
     origin: resolveCorsOrigins(),
     credentials: true,
   });
-
-  app.use(
-    raw({
-      type: 'application/json',
-      verify: (req: any, _res: any, buf: Buffer) => {
-        req.rawBody = buf;
-      },
-    }),
-  );
 
   app.useGlobalPipes(
     new ValidationPipe({
