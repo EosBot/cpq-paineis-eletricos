@@ -15,6 +15,7 @@ import { PrismaModule } from './prisma/prisma.module';
 import { QuotesModule } from './quotes/quotes.module';
 import { RulesModule } from './rules/rules.module';
 import { ShipmentsModule } from './shipments/shipments.module';
+import { MarketplaceModule } from './modules/marketplace/marketplace.module';
 import { PanelBuilderModule } from './modules/panel-builder/panel-builder.module';
 import { PrivacyModule } from './modules/privacy/privacy.module';
 import { SuperAdminModule } from './modules/super-admin/super-admin.module';
@@ -51,7 +52,7 @@ import { TestModule } from './test/test.module';
     SuperAdminModule,
     PrivacyModule,
     PanelBuilderModule,
-    TestModule,
+    MarketplaceModule,
   ],
   providers: [
     {

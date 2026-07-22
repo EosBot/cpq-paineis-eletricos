@@ -50,11 +50,14 @@ enum QuoteVersionTrigger {
 }
 
 enum OrderStatus {
+  PENDING
   CONFIRMED
   IN_PRODUCTION
   READY_TO_SHIP
   SHIPPED
   DELIVERED
+  CANCELLED
+  REFUNDED
 }
 
 enum ShipmentStatus {
@@ -349,11 +352,12 @@ model Configuration {
 
   tenant             Tenant                  @relation(fields: [tenantId], references: [id], onDelete: Cascade)
    quote              Quote?                  @relation(fields: [quoteId], references: [id], onDelete: Cascade)
-  items              ConfigurationItem[]
-  snapshots          ConfigurationSnapshot[]
-  rails              DINRail[]
-  circuits           Circuit[]
-  placements         ComponentPlacement[]
+   items              ConfigurationItem[]
+   snapshots          ConfigurationSnapshot[]
+   rails              DINRail[]
+   circuits           Circuit[]
+   placements         ComponentPlacement[]
+   cartItems          CartItem[]
 
   @@index([tenantId, status])
   @@index([tenantId, panelType])
@@ -450,11 +454,12 @@ model Quote {
   commercialContract   CommercialContract?    @relation(fields: [commercialContractId], references: [id], onDelete: SetNull)
   createdBy            User                   @relation("QuoteCreatedBy", fields: [createdByUserId], references: [id], onDelete: Restrict)
   configuration        Configuration?
-  versions             QuoteVersion[]
-  bomVersions          BOMVersion[]
-  orders               Order[]
+   versions             QuoteVersion[]
+   bomVersions          BOMVersion[]
+   orders               Order[]
+   customers            Customer[]
 
-  @@unique([tenantId, quoteNumber])
+   @@unique([tenantId, quoteNumber])
   @@index([tenantId, status])
   @@index([tenantId, customerAccountId])
 }
@@ -512,28 +517,54 @@ model Order {
   id                   String       @id @default(cuid())
   tenantId             String
   orderNumber          String       @db.VarChar(120)
-  quoteId              String
-  quoteVersionId       String
-  customerAccountId    String
+
+  // CPQ source (optional — orders can come from CPQ or directly from cart)
+  quoteId              String?
+  quoteVersionId       String?
+
+  // Customer (marketplace customer)
+  customerId           String?
+
+  // Legacy CPQ customer (for backwards compatibility)
+  customerAccountId    String?
+
   bomVersionId         String?
-  status               OrderStatus  @default(CONFIRMED)
-  currencyCode         String       @db.VarChar(3)
-  confirmedAt          DateTime     @default(now())
+  status               OrderStatus  @default(PENDING)
+  currencyCode         String       @db.VarChar(3) @default("BRL")
+
+  // Pricing
+  subtotal             Decimal      @default(0) @db.Decimal(18, 4)
+  taxAmount            Decimal      @default(0) @db.Decimal(18, 4)
+  discountAmount       Decimal      @default(0) @db.Decimal(18, 4)
+  totalAmount          Decimal      @default(0) @db.Decimal(18, 4)
+
+  // Shipping
+  shippingAddress      Json?
+  shippingMethod       String?
+  trackingCode         String?      @db.VarChar(120)
+
+  // Timestamps
+  confirmedAt          DateTime?
   producedAt           DateTime?
   readyToShipAt        DateTime?
   shippedAt            DateTime?
   deliveredAt          DateTime?
   createdAt            DateTime     @default(now())
   updatedAt            DateTime     @updatedAt
+
+  // Relations
   tenant               Tenant       @relation(fields: [tenantId], references: [id], onDelete: Cascade)
-  quote                Quote        @relation(fields: [quoteId], references: [id], onDelete: Restrict)
-  quoteVersion         QuoteVersion @relation(fields: [quoteVersionId], references: [id], onDelete: Restrict)
-  customerAccount      CustomerAccount @relation(fields: [customerAccountId], references: [id], onDelete: Restrict)
+  quote                Quote?       @relation(fields: [quoteId], references: [id], onDelete: SetNull)
+  quoteVersion         QuoteVersion? @relation(fields: [quoteVersionId], references: [id], onDelete: SetNull)
+  customer             Customer?    @relation(fields: [customerId], references: [id], onDelete: SetNull)
+  customerAccount      CustomerAccount? @relation(fields: [customerAccountId], references: [id], onDelete: SetNull)
   bomVersion           BOMVersion?  @relation(fields: [bomVersionId], references: [id], onDelete: SetNull)
   shipments            Shipment[]
+  items                OrderItem[]
 
   @@unique([tenantId, orderNumber])
   @@index([tenantId, status])
+  @@index([tenantId, customerId])
   @@index([tenantId, customerAccountId])
 }
 
@@ -698,22 +729,36 @@ model Product {
   tenantId      String
   sku           String           @db.VarChar(120)
   name          String           @db.VarChar(160)
-  description   String?          @db.VarChar(500)
+  slug          String?          @db.VarChar(120)
+  description   String?          @db.VarChar(2000)
+  type          ProductType      @default(STANDARD)
+  price         Decimal?         @db.Decimal(18, 4)
   unitCost      Decimal          @default(0) @db.Decimal(18, 4)
   sellingPrice  Decimal          @default(0) @db.Decimal(18, 4)
   unit          String           @default("UN") @db.VarChar(20)
   isActive      Boolean          @default(true)
   taxCode       String?          @db.VarChar(20)
+  metadata      Json?
+  cpqTemplate   Json?
+
   createdAt     DateTime         @default(now())
   updatedAt     DateTime         @updatedAt
 
+  categoryId    String?
+  category      Category?        @relation(fields: [categoryId], references: [id], onDelete: SetNull)
+  images        ProductImage[]
+  cartItems     CartItem[]
+  orderItems    OrderItem[]
   tenant        Tenant           @relation(fields: [tenantId], references: [id], onDelete: Cascade)
   stockItems    InventoryItem[]
   stockMovements StockMovement[]
   salesItems    SalesOrderItem[]
   purchaseItems PurchaseOrderItem[]
 
+  @@unique([tenantId, slug])
   @@unique([tenantId, sku])
+  @@index([tenantId, type, isActive])
+  @@index([tenantId, categoryId])
   @@index([tenantId, name])
 }
 
@@ -1461,4 +1506,125 @@ model ComponentPlacement {
 
   @@index([configurationId])
   @@index([componentId])
+}
+
+enum ProductType {
+  STANDARD
+  CPQ_CONFIGURABLE
+}
+
+enum CartStatus {
+  ACTIVE
+  CHECKOUT
+  COMPLETED
+  ABANDONED
+}
+
+model ProductImage {
+  id        String   @id @default(cuid())
+  productId String
+  url       String
+  altText   String?
+  sortOrder Int      @default(0)
+  createdAt DateTime @default(now())
+
+  product   Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
+
+  @@index([productId, sortOrder])
+}
+
+model Category {
+  id       String    @id @default(cuid())
+  tenantId String
+  name     String    @db.VarChar(120)
+  slug     String    @db.VarChar(120)
+  parentId String?
+  isActive Boolean   @default(true)
+
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+
+  parent   Category?  @relation("CategoryHierarchy", fields: [parentId], references: [id], onDelete: SetNull)
+  children Category[] @relation("CategoryHierarchy")
+  products Product[]
+
+  @@unique([tenantId, slug])
+  @@index([tenantId, parentId])
+}
+
+model Cart {
+  id         String     @id @default(cuid())
+  customerId String?    @unique
+  sessionId  String?    @unique
+  status     CartStatus @default(ACTIVE)
+  createdAt  DateTime   @default(now())
+  updatedAt  DateTime   @updatedAt
+
+  customer   Customer?  @relation(fields: [customerId], references: [id], onDelete: Cascade)
+  items      CartItem[]
+
+  @@index([customerId])
+  @@index([sessionId])
+}
+
+model CartItem {
+  id              String   @id @default(cuid())
+  cartId          String
+  productId       String
+  quantity        Int      @default(1)
+  unitPrice       Decimal  @db.Decimal(18, 4)
+  configurationId String?
+  configurationData Json?
+
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  cart            Cart     @relation(fields: [cartId], references: [id], onDelete: Cascade)
+  product         Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
+  configuration   Configuration? @relation(fields: [configurationId], references: [id], onDelete: SetNull)
+
+  @@index([cartId])
+  @@index([productId])
+}
+
+model Customer {
+  id        String   @id @default(cuid())
+  tenantId  String
+  email     String   @db.VarChar(320)
+  firstName String   @db.VarChar(120)
+  lastName  String   @db.VarChar(120)
+  phone     String?  @db.VarChar(40)
+  taxId     String?  @db.VarChar(40)
+  address   Json?
+  isActive  Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  cart      Cart?
+  orders    Order[]
+  quotes    Quote[]
+
+  @@unique([tenantId, email])
+  @@index([tenantId, email])
+  @@index([tenantId, taxId])
+}
+
+model OrderItem {
+  id              String   @id @default(cuid())
+  orderId         String
+  productId       String
+  productName     String   @db.VarChar(160)
+  quantity        Int
+  unitPrice       Decimal  @db.Decimal(18, 4)
+  totalPrice      Decimal  @db.Decimal(18, 4)
+  configurationId String?
+  configurationData Json?
+
+  createdAt       DateTime @default(now())
+
+  order           Order    @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  product         Product  @relation(fields: [productId], references: [id], onDelete: Restrict)
+
+  @@index([orderId])
+  @@index([productId])
 }

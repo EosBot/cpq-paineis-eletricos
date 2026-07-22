@@ -7,7 +7,7 @@ import { getTenantContextFromStorage } from '../tenancy/tenant-context.storage';
 import { AdvanceOrderDto } from './dto/advance-order.dto';
 import { ConvertQuoteToOrderDto } from './dto/convert-quote-to-order.dto';
 
-const ORDER_FLOW = ['CONFIRMED', 'IN_PRODUCTION', 'READY_TO_SHIP', 'SHIPPED', 'DELIVERED'] as const;
+const ORDER_FLOW = ['PENDING', 'CONFIRMED', 'IN_PRODUCTION', 'READY_TO_SHIP', 'SHIPPED', 'DELIVERED'] as const;
 
 @Injectable()
 export class OrdersService {
@@ -65,20 +65,24 @@ export class OrdersService {
 
     await this.prismaService.setTenantContext(tenantContext.tenantId);
 
-    const quoteVersion = await this.prismaService.quoteVersion.findFirstOrThrow({
-      where: { id: order.quoteVersionId, tenantId: tenantContext.tenantId },
-    });
+    const quoteVersion = order.quoteVersionId
+      ? await this.prismaService.quoteVersion.findFirst({
+          where: { id: order.quoteVersionId, tenantId: tenantContext.tenantId },
+        })
+      : null;
 
-    const existingBom = await this.prismaService.bOMVersion.findFirst({
-      where: { quoteVersionId: quoteVersion.id, tenantId: tenantContext.tenantId },
-    });
-
-    if (!existingBom) {
-      await this.bomService.generateBomVersion(tenantContext, {
-        quoteId: order.quoteId,
-        quoteVersionId: quoteVersion.id,
-        configurationSnapshotId: quoteVersion.configurationSnapshotId,
+    if (quoteVersion) {
+      const existingBom = await this.prismaService.bOMVersion.findFirst({
+        where: { quoteVersionId: quoteVersion.id, tenantId: tenantContext.tenantId },
       });
+
+      if (!existingBom && order.quoteId) {
+        await this.bomService.generateBomVersion(tenantContext, {
+          quoteId: order.quoteId,
+          quoteVersionId: quoteVersion.id,
+          configurationSnapshotId: quoteVersion.configurationSnapshotId,
+        });
+      }
     }
 
     return this.prismaService.order.findUniqueOrThrow({
@@ -93,8 +97,8 @@ export class OrdersService {
         where: { id: dto.orderId, tenantId: tenantContext.tenantId },
       });
 
-      const currentIndex = ORDER_FLOW.indexOf(order.status);
-      const targetIndex = ORDER_FLOW.indexOf(dto.toStatus as typeof ORDER_FLOW[number]);
+      const currentIndex = ORDER_FLOW.indexOf(order.status as any);
+      const targetIndex = ORDER_FLOW.indexOf(dto.toStatus as any);
 
       if (targetIndex !== currentIndex + 1) {
         throw new BadRequestException(

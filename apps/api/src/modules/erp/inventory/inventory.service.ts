@@ -24,6 +24,7 @@ export class InventoryService {
       data: {
         tenantId,
         sku: dto.sku,
+        slug: dto.sku.toLowerCase(),
         name: dto.name,
         description: dto.description,
         unitCost: new Prisma.Decimal(dto.unitCost),
