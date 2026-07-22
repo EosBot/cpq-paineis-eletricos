@@ -2,7 +2,7 @@
 
 import { create } from 'zustand';
 
-export type PanelType = 'WALL_MOUNT' | 'FLOOR_MOUNT' | 'MODULAR';
+export type PanelType = 'CCM' | 'QGBT' | 'CCMI' | 'AUTOMACAO' | 'DISTRIBUICAO';
 export type StepId = 'PROJECT' | 'ENCLOSURE' | 'CIRCUITS' | 'COMPONENTS' | 'REVIEW';
 
 export interface EnclosureSpec {
@@ -12,7 +12,7 @@ export interface EnclosureSpec {
   heightMm: number;
   depthMm: number;
   ipRating: string;
-  material: 'STEEL' | 'STAINLESS' | 'ALUMINUM' | 'POLYESTER';
+  material: 'STEEL' | 'SS304' | 'SS316' | 'POLYESTER';
 }
 
 export interface DINRail {
@@ -20,7 +20,7 @@ export interface DINRail {
   type: 'TOP_HAT_7_5' | 'TOP_HAT_15' | 'C_SECTION' | 'G_SECTION';
   lengthMm: number;
   positionY: number;
-  orientation: 'HORIZONTAL' | 'VERTICAL';
+  label?: string;
   moduleCapacity: number;
   usedModules: number;
 }
@@ -56,6 +56,30 @@ export interface ProjectSpec {
   supplyPhases: number;
   totalLoadA: number;
   shortCircuitRating: string;
+  stateCode: string;
+}
+
+export interface ComponentCatalogItem {
+  id: string;
+  tenantId: string;
+  sku: string;
+  name: string;
+  description: string | null;
+  brand: string | null;
+  isActive: boolean;
+  moduleWidth: number;
+  ratedCurrent: any | null;
+  ratedVoltage: string | null;
+  poles: any | null;
+  mountingType: any;
+  formFactorGroup: string | null;
+  typicalPrice: any | null;
+  componentCategoryId: string;
+  componentCategory: {
+    id: string;
+    code: string;
+    name: string;
+  };
 }
 
 export interface BuilderState {
@@ -69,7 +93,21 @@ export interface BuilderState {
   placements: ComponentPlacement[];
   selectedRailId: string | null;
   selectedComponentId: string | null;
+  catalog: ComponentCatalogItem[];
+  catalogCategories: any[];
+  regions: any[];
+  templates: any[];
   isSaving: boolean;
+  pricing: {
+    componentCost: number;
+    laborHours: number;
+    laborRate: number;
+    laborCost: number;
+    overhead: number;
+    subtotal: number;
+    total: number;
+    componentCount: number;
+  } | null;
 }
 
 export interface BuilderActions {
@@ -87,13 +125,18 @@ export interface BuilderActions {
   selectRail: (id: string | null) => void;
   selectComponent: (id: string | null) => void;
   setConfigurationId: (id: string) => void;
+  setCatalog: (catalog: ComponentCatalogItem[]) => void;
+  setCatalogCategories: (categories: any[]) => void;
+  setRegions: (regions: any[]) => void;
+  setTemplates: (templates: any[]) => void;
+  setPricing: (pricing: BuilderState['pricing']) => void;
   reset: () => void;
 }
 
 const STEPS: StepId[] = ['PROJECT', 'ENCLOSURE', 'CIRCUITS', 'COMPONENTS', 'REVIEW'];
 
 const initialProject: ProjectSpec = {
-  panelType: 'WALL_MOUNT',
+  panelType: 'CCM',
   name: '',
   description: '',
   ambientTempC: 25,
@@ -102,6 +145,7 @@ const initialProject: ProjectSpec = {
   supplyPhases: 3,
   totalLoadA: 0,
   shortCircuitRating: '10kA',
+  stateCode: 'SP',
 };
 
 export const useBuilderStore = create<BuilderState & BuilderActions>((set, get) => ({
@@ -115,7 +159,12 @@ export const useBuilderStore = create<BuilderState & BuilderActions>((set, get) 
   placements: [],
   selectedRailId: null,
   selectedComponentId: null,
+  catalog: [],
+  catalogCategories: [],
+  regions: [],
+  templates: [],
   isSaving: false,
+  pricing: null,
 
   setStep: (step) => set({ currentStep: step }),
 
@@ -168,6 +217,11 @@ export const useBuilderStore = create<BuilderState & BuilderActions>((set, get) 
   selectRail: (id) => set({ selectedRailId: id }),
   selectComponent: (id) => set({ selectedComponentId: id }),
   setConfigurationId: (id) => set({ configurationId: id }),
+  setCatalog: (catalog) => set({ catalog }),
+  setCatalogCategories: (categories) => set({ catalogCategories: categories }),
+  setRegions: (regions) => set({ regions }),
+  setTemplates: (templates) => set({ templates }),
+  setPricing: (pricing) => set({ pricing }),
 
   reset: () =>
     set({
@@ -181,6 +235,11 @@ export const useBuilderStore = create<BuilderState & BuilderActions>((set, get) 
       placements: [],
       selectedRailId: null,
       selectedComponentId: null,
+      catalog: [],
+      catalogCategories: [],
+      regions: [],
+      templates: [],
       isSaving: false,
+      pricing: null,
     }),
 }));

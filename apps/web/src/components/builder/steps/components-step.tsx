@@ -1,208 +1,136 @@
 'use client';
 
 import { useState } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
-import { useBuilderStore, type ComponentPlacement } from '@/store/builder';
-import { cn } from '@/lib/utils';
-
-const MOCK_COMPONENTS = [
-  { id: 'comp-001', brand: 'ABB', model: 'S201-C10', category: 'BREAKER', moduleWidth: 1, unitPrice: 89.50 },
-  { id: 'comp-002', brand: 'ABB', model: 'S201-C16', category: 'BREAKER', moduleWidth: 1, unitPrice: 95.00 },
-  { id: 'comp-003', brand: 'ABB', model: 'S203-C25', category: 'BREAKER', moduleWidth: 3, unitPrice: 210.00 },
-  { id: 'comp-004', brand: 'Schneider', model: 'LC1D09', category: 'CONTACTOR', moduleWidth: 1, unitPrice: 120.00 },
-  { id: 'comp-005', brand: 'Schneider', model: 'LC1D18', category: 'CONTACTOR', moduleWidth: 1, unitPrice: 185.00 },
-  { id: 'comp-006', brand: 'Siemens', model: '3RT2015', category: 'CONTACTOR', moduleWidth: 1, unitPrice: 165.00 },
-  { id: 'comp-007', brand: 'Phoenix Contact', model: 'REL-IR-BL/L-24/21', category: 'RELAY', moduleWidth: 1, unitPrice: 45.00 },
-  { id: 'comp-008', brand: 'Weidmüller', model: 'TRS 4 24VDC', category: 'RELAY', moduleWidth: 1, unitPrice: 52.00 },
-  { id: 'comp-009', brand: 'ABB', model: 'SU202MR-C10', category: 'RCBO', moduleWidth: 2, unitPrice: 310.00 },
-  { id: 'comp-010', brand: 'Siemens', model: 'S7-1200 CPU 1214C', category: 'PLC', moduleWidth: 6, unitPrice: 2450.00 },
-  { id: 'comp-011', brand: 'Mean Well', model: 'EDR-120-24', category: 'PSU', moduleWidth: 3, unitPrice: 180.00 },
-  { id: 'comp-012', brand: 'Phoenix Contact', model: 'UT 4', category: 'TERMINAL', moduleWidth: 1, unitPrice: 8.50 },
-  { id: 'comp-013', brand: 'Wago', model: '280-901', category: 'TERMINAL', moduleWidth: 1, unitPrice: 6.20 },
-  { id: 'comp-014', brand: 'Schneider', model: 'ATS48C14Q', category: 'VFD', moduleWidth: 12, unitPrice: 5800.00 },
-];
-
-const CATEGORY_LABELS: Record<string, string> = {
-  BREAKER: 'Disjuntores',
-  CONTACTOR: 'Contatores',
-  RELAY: 'Relés',
-  RCBO: 'Disjuntores DR',
-  PLC: 'CLPs',
-  PSU: 'Fontes',
-  TERMINAL: 'Bornes',
-  VFD: 'Inversores',
-};
+import { motion } from 'framer-motion';
+import { useBuilderStore } from '@/store/builder';
 
 export function ComponentsStep() {
-  const { placements, addPlacement, removePlacement, rails, circuits, enclosure } = useBuilderStore();
-  const [selectedCategory, setSelectedCategory] = useState<string>('ALL');
-  const [searchQuery, setSearchQuery] = useState('');
+  const { catalog, placements, addPlacement, removePlacement, rails, nextStep, prevStep, setPricing, pricing } = useBuilderStore();
+  const [selectedCategory, setSelectedCategory] = useState<string>('');
+  const [selectedRailId, setSelectedRailId] = useState<string>('');
 
-  if (!enclosure) {
-    return (
-      <div className="flex h-full items-center justify-center">
-        <p className="text-muted-foreground">Selecione um invólucro primeiro.</p>
-      </div>
-    );
-  }
+  const filteredCatalog = selectedCategory
+    ? catalog.filter((c) => c.componentCategory.code === selectedCategory)
+    : catalog;
 
-  const filteredComponents = MOCK_COMPONENTS.filter((c) => {
-    const matchesCategory = selectedCategory === 'ALL' || c.category === selectedCategory;
-    const matchesSearch = searchQuery === '' || `${c.brand} ${c.model}`.toLowerCase().includes(searchQuery.toLowerCase());
-    return matchesCategory && matchesSearch;
-  });
+  const handleAddToRail = (component: any) => {
+    if (!selectedRailId) return;
+    const rail = rails.find((r) => r.id === selectedRailId);
+    if (!rail || rail.usedModules + component.moduleWidth > rail.moduleCapacity) return;
 
-  const handleAddComponent = (comp: typeof MOCK_COMPONENTS[number]) => {
-    if (rails.length === 0) return;
-
-    const targetRail = rails[0];
-    const usedWidthMM = placements
-      .filter((p) => p.railId === targetRail.id)
-      .reduce((sum, p) => sum + p.moduleWidth * 18, 0);
-
-    if (usedWidthMM + comp.moduleWidth * 18 > targetRail.lengthMm) return;
-
-    const placement: ComponentPlacement = {
-      id: `place-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
-      componentId: comp.id,
-      railId: targetRail.id,
-      positionMm: usedWidthMM,
-      moduleWidth: comp.moduleWidth,
-      circuitId: circuits[0]?.id ?? null,
-      brand: comp.brand,
-      model: comp.model,
-      unitPrice: comp.unitPrice,
-      category: comp.category,
-    };
-
-    addPlacement(placement);
+    addPlacement({
+      id: `placement-${Date.now()}`,
+      componentId: component.id,
+      railId: selectedRailId,
+      positionMm: rail.usedModules * 18,
+      moduleWidth: component.moduleWidth,
+      circuitId: null,
+      brand: component.brand || '',
+      model: component.name,
+      unitPrice: component.typicalPrice?.toNumber() || 0,
+      category: component.componentCategory.code,
+    });
   };
 
   return (
-    <div className="flex h-full gap-0">
-      {/* Catalog Panel */}
-      <div className="flex w-72 shrink-0 flex-col border-r bg-secondary/20">
-        <div className="border-b p-4">
-          <h2 className="text-sm font-semibold">Catálogo</h2>
-          <input
-            type="text"
-            placeholder="Buscar componente..."
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            className="mt-2 w-full rounded-md border border-input bg-background px-3 py-1.5 text-xs"
-          />
-        </div>
+    <div className="mx-auto max-w-5xl space-y-6">
+      <div>
+        <h2 className="text-2xl font-bold text-white">Adicione Componentes</h2>
+        <p className="mt-2 text-white/50">Selecione o trilho e adicione componentes do catálogo</p>
+      </div>
 
-        {/* Category Filter */}
-        <div className="flex flex-wrap gap-1 border-b p-3">
-          <button
-            onClick={() => setSelectedCategory('ALL')}
-            className={cn(
-              'rounded-full px-2.5 py-1 text-[10px] font-medium transition-colors',
-              selectedCategory === 'ALL' ? 'bg-primary text-primary-foreground' : 'bg-background hover:bg-secondary',
-            )}
-          >
-            Todos
-          </button>
-          {Object.entries(CATEGORY_LABELS).map(([key, label]) => (
+      {/* Rail Selection */}
+      <div className="space-y-2">
+        <label className="text-sm font-medium text-white/70">Trilho Alvo</label>
+        <div className="flex gap-2">
+          {rails.map((rail) => (
             <button
-              key={key}
-              onClick={() => setSelectedCategory(key)}
-              className={cn(
-                'rounded-full px-2.5 py-1 text-[10px] font-medium transition-colors',
-                selectedCategory === key ? 'bg-primary text-primary-foreground' : 'bg-background hover:bg-secondary',
-              )}
+              key={rail.id}
+              onClick={() => setSelectedRailId(rail.id)}
+              className={`rounded-lg border px-4 py-2 text-sm transition-all ${
+                selectedRailId === rail.id
+                  ? 'border-blue-500/50 bg-blue-500/10 text-blue-400'
+                  : 'border-white/5 text-white/50'
+              }`}
             >
-              {label}
-            </button>
-          ))}
-        </div>
-
-        {/* Component List */}
-        <div className="flex-1 overflow-y-auto">
-          {filteredComponents.map((comp) => (
-            <button
-              key={comp.id}
-              onClick={() => handleAddComponent(comp)}
-              className="flex w-full items-center gap-3 border-b px-4 py-3 text-left transition-colors hover:bg-background"
-            >
-              {/* Mini representation */}
-              <div
-                className="flex h-8 shrink-0 items-center justify-center rounded border bg-background text-[8px] font-bold"
-                style={{ width: `${Math.max(24, comp.moduleWidth * 8)}px` }}
-              >
-                {comp.moduleWidth}M
-              </div>
-              <div className="min-w-0 flex-1">
-                <div className="truncate text-xs font-medium">{comp.brand} {comp.model}</div>
-                <div className="text-[10px] text-muted-foreground">{CATEGORY_LABELS[comp.category]}</div>
-              </div>
-              <div className="shrink-0 text-[11px] font-medium">
-                {new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(comp.unitPrice)}
-              </div>
+              {rail.label || `Trilho ${rails.indexOf(rail) + 1}`}
+              <span className="ml-2 text-xs text-white/30">
+                {rail.usedModules}/{rail.moduleCapacity}
+              </span>
             </button>
           ))}
         </div>
       </div>
 
-      {/* DIN Rail Layout */}
-      <div className="flex-1 overflow-y-auto p-8">
-        <h2 className="mb-4 text-sm font-semibold">Layout DIN Rail</h2>
+      {/* Category Filter */}
+      <div className="flex gap-2 overflow-x-auto">
+        <button
+          onClick={() => setSelectedCategory('')}
+          className={`shrink-0 rounded-full px-3 py-1.5 text-xs font-medium ${
+            !selectedCategory ? 'bg-blue-500/20 text-blue-400' : 'bg-white/5 text-white/40'
+          }`}
+        >
+          Todos
+        </button>
+        {Array.from(new Set(catalog.map((c) => c.componentCategory.code))).map((cat) => (
+          <button
+            key={cat}
+            onClick={() => setSelectedCategory(cat)}
+            className={`shrink-0 rounded-full px-3 py-1.5 text-xs font-medium ${
+              selectedCategory === cat ? 'bg-blue-500/20 text-blue-400' : 'bg-white/5 text-white/40'
+            }`}
+          >
+            {cat}
+          </button>
+        ))}
+      </div>
 
-        {rails.length === 0 ? (
-          <div className="rounded-lg border-2 border-dashed p-8 text-center text-sm text-muted-foreground">
-            Nenhum trilho DIN definido. Adicione trilhos para começar.
+      {/* Component Grid */}
+      <div className="grid max-h-64 grid-cols-2 gap-2 overflow-y-auto lg:grid-cols-3">
+        {filteredCatalog.map((comp) => (
+          <motion.button
+            key={comp.id}
+            whileHover={{ scale: 1.02 }}
+            whileTap={{ scale: 0.98 }}
+            onClick={() => handleAddToRail(comp)}
+            disabled={!selectedRailId}
+            className="rounded-lg border border-white/5 bg-white/[0.02] p-3 text-left transition-all hover:border-white/10 disabled:opacity-30"
+          >
+            <p className="text-xs font-medium text-white/70">{comp.brand}</p>
+            <p className="mt-1 truncate text-sm text-white/90">{comp.name}</p>
+            <div className="mt-2 flex items-center justify-between">
+              <span className="text-[10px] text-white/30">{comp.moduleWidth}M</span>
+              <span className="text-xs font-semibold text-emerald-400">
+                R$ {(comp.typicalPrice?.toNumber() || 0).toFixed(2)}
+              </span>
+            </div>
+          </motion.button>
+        ))}
+      </div>
+
+      {/* Current Placements */}
+      {placements.length > 0 && (
+        <div className="rounded-lg border border-white/5 bg-white/[0.02] p-4">
+          <h4 className="text-sm font-medium text-white/70">Componentes no Painel ({placements.length})</h4>
+          <div className="mt-2 space-y-1">
+            {placements.map((p) => (
+              <div key={p.id} className="flex items-center justify-between text-xs">
+                <span className="text-white/60">{p.brand} {p.model}</span>
+                <button onClick={() => removePlacement(p.id)} className="text-red-400 hover:text-red-300">remover</button>
+              </div>
+            ))}
           </div>
-        ) : (
-          <div className="space-y-6">
-            {rails.map((rail) => {
-              const railPlacements = placements.filter((p) => p.railId === rail.id);
-              const totalModules = Math.floor(rail.lengthMm / 18);
+        </div>
+      )}
 
-              return (
-                <div key={rail.id} className="rounded-lg border bg-card p-4">
-                  <div className="mb-2 flex items-center justify-between text-xs text-muted-foreground">
-                    <span>Trilho {rail.type === 'TOP_HAT_7_5' ? 'TS35' : rail.type}</span>
-                    <span>{railPlacements.reduce((s, p) => s + p.moduleWidth, 0)}/{totalModules} módulos</span>
-                  </div>
-
-                  {/* Rail Visual */}
-                  <div className="relative h-10 rounded bg-gradient-to-b from-amber-800/20 to-amber-900/20 border border-amber-900/30">
-                    {/* Module markers */}
-                    <div className="absolute inset-0 flex">
-                      {Array.from({ length: Math.min(totalModules, 40) }).map((_, i) => (
-                        <div key={i} className="flex-1 border-r border-amber-900/10 last:border-r-0" />
-                      ))}
-                    </div>
-
-                    {/* Placed Components */}
-                    <AnimatePresence>
-                      {railPlacements.map((placement) => {
-                        const leftPct = (placement.positionMm / rail.lengthMm) * 100;
-                        const widthPct = (placement.moduleWidth * 18 / rail.lengthMm) * 100;
-                        return (
-                          <motion.button
-                            key={placement.id}
-                            initial={{ scaleX: 0, opacity: 0 }}
-                            animate={{ scaleX: 1, opacity: 1 }}
-                            exit={{ scaleX: 0, opacity: 0 }}
-                            transition={{ type: 'spring', duration: 0.4, bounce: 0.2 }}
-                            onClick={() => removePlacement(placement.id)}
-                            style={{ left: `${leftPct}%`, width: `${widthPct}%` }}
-                            className="absolute inset-y-1 origin-left rounded-sm bg-primary/70 px-1 text-[8px] text-primary-foreground transition-colors hover:bg-destructive/70"
-                            title={`${placement.brand} ${placement.model} — Remover`}
-                          >
-                            <span className="truncate">{placement.brand}</span>
-                          </motion.button>
-                        );
-                      })}
-                    </AnimatePresence>
-                  </div>
-                </div>
-              );
-            })}
-          </div>
-        )}
+      {/* Navigation */}
+      <div className="flex justify-between">
+        <button onClick={prevStep} className="rounded-lg border border-white/10 bg-white/5 px-6 py-3 text-sm font-medium text-white/70">
+          ← Voltar
+        </button>
+        <button onClick={nextStep} className="rounded-lg bg-gradient-to-r from-blue-500 to-cyan-400 px-6 py-3 text-sm font-semibold text-white shadow-lg shadow-blue-500/20">
+          Próximo →
+        </button>
       </div>
     </div>
   );

@@ -2,165 +2,125 @@
 
 import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { useBuilderStore, type Circuit } from '@/store/builder';
-import { Button } from '@/components/ui/button';
-import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/components/ui/card';
-import { cn } from '@/lib/utils';
-
-const CIRCUIT_TYPES = [
-  { value: 'POWER', label: 'Potência', color: '#ef4444' },
-  { value: 'CONTROL', label: 'Controle', color: '#3b82f6' },
-  { value: 'SIGNAL', label: 'Sinal', color: '#22c55e' },
-] as const;
+import { useBuilderStore } from '@/store/builder';
 
 const CIRCUIT_PRESETS = [
-  { name: 'Alimentação Principal', type: 'POWER' as const, voltage: '380V' },
-  { name: 'Controle Motor M1', type: 'CONTROL' as const, voltage: '24V' },
-  { name: 'Iluminação', type: 'POWER' as const, voltage: '220V' },
-  { name: 'Sinal Analógico', type: 'SIGNAL' as const, voltage: '4-20mA' },
+  { name: 'M1 - Bomba Principal', type: 'POWER', voltage: '380V', color: '#ef4444' },
+  { name: 'M2 - Bomba Reserva', type: 'POWER', voltage: '380V', color: '#3b82f6' },
+  { name: 'M3 - Ventilador', type: 'POWER', voltage: '380V', color: '#22c55e' },
+  { name: 'M4 - Compressor', type: 'POWER', voltage: '380V', color: '#f59e0b' },
+  { name: 'Iluminação', type: 'POWER', voltage: '220V', color: '#8b5cf6' },
+  { name: 'Tomadas 127V', type: 'POWER', voltage: '127V', color: '#06b6d4' },
+  { name: 'Automação', type: 'CONTROL', voltage: '24VDC', color: '#ec4899' },
 ];
 
-const COLORS = ['#ef4444', '#f97316', '#eab308', '#22c55e', '#3b82f6', '#8b5cf6', '#ec4899'];
-
 export function CircuitsStep() {
-  const { circuits, addCircuit, removeCircuit } = useBuilderStore();
-  const [name, setName] = useState('');
-  const [type, setType] = useState<'POWER' | 'CONTROL' | 'SIGNAL'>('POWER');
-  const [voltage, setVoltage] = useState('380V');
+  const { circuits, addCircuit, removeCircuit, nextStep, prevStep } = useBuilderStore();
+  const [customName, setCustomName] = useState('');
 
-  const handleAdd = () => {
-    if (!name) return;
-    const circuit: Circuit = {
-      id: `circuit-${Date.now()}`,
-      name,
-      type,
-      voltage,
-      color: COLORS[circuits.length % COLORS.length],
-    };
-    addCircuit(circuit);
-    setName('');
-  };
-
-  const handlePreset = (preset: typeof CIRCUIT_PRESETS[number]) => {
+  const handleAddPreset = (preset: typeof CIRCUIT_PRESETS[0]) => {
     addCircuit({
       id: `circuit-${Date.now()}`,
       name: preset.name,
-      type: preset.type,
+      type: preset.type as 'POWER' | 'CONTROL',
       voltage: preset.voltage,
-      color: COLORS[circuits.length % COLORS.length],
+      color: preset.color,
     });
   };
 
+  const handleAddCustom = () => {
+    if (!customName.trim()) return;
+    addCircuit({
+      id: `circuit-${Date.now()}`,
+      name: customName,
+      type: 'POWER',
+      voltage: '380V',
+      color: '#6b7280',
+    });
+    setCustomName('');
+  };
+
   return (
-    <div className="mx-auto max-w-3xl space-y-8">
+    <div className="mx-auto max-w-4xl space-y-8">
       <div>
-        <h1 className="text-3xl font-bold tracking-tight">Defina os Circuitos</h1>
-        <p className="mt-2 text-muted-foreground">
-          Circuitos agrupam componentes por função elétrica. Cada circuito pode ter proteção e fiação dedicada.
-        </p>
+        <h2 className="text-2xl font-bold text-white">Defina os Circuitos</h2>
+        <p className="mt-2 text-white/50">Cada circuito representa um ramo elétrico do painel</p>
       </div>
 
       {/* Presets */}
-      <Card>
-        <CardHeader>
-          <CardTitle>Rápido</CardTitle>
-          <CardDescription>Adicione circuitos comuns com um clique.</CardDescription>
-        </CardHeader>
-        <CardContent>
-          <div className="flex flex-wrap gap-2">
-            {CIRCUIT_PRESETS.map((preset) => (
-              <button
-                key={preset.name}
-                onClick={() => handlePreset(preset)}
-                className="rounded-full border border-border bg-background px-3 py-1.5 text-xs font-medium transition-colors hover:border-primary hover:bg-primary/5"
-              >
-                + {preset.name}
-              </button>
-            ))}
-          </div>
-        </CardContent>
-      </Card>
-
-      {/* Custom Circuit Form */}
-      <Card>
-        <CardHeader>
-          <CardTitle>Circuito Personalizado</CardTitle>
-          <CardDescription>Crie um circuito com nome, tipo e tensão específicos.</CardDescription>
-        </CardHeader>
-        <CardContent>
-          <div className="flex gap-3">
-            <input
-              type="text"
-              placeholder="Nome do circuito..."
-              value={name}
-              onChange={(e) => setName(e.target.value)}
-              onKeyDown={(e) => e.key === 'Enter' && handleAdd()}
-              className="flex-1 rounded-md border border-input bg-background px-3 py-2 text-sm"
-            />
-
-            <select
-              value={type}
-              onChange={(e) => setType(e.target.value as typeof type)}
-              className="rounded-md border border-input bg-background px-3 py-2 text-sm"
+      <div className="space-y-3">
+        <label className="text-sm font-medium text-white/70">Circuitos Predefinidos</label>
+        <div className="flex flex-wrap gap-2">
+          {CIRCUIT_PRESETS.map((preset) => (
+            <motion.button
+              key={preset.name}
+              whileHover={{ scale: 1.05 }}
+              whileTap={{ scale: 0.95 }}
+              onClick={() => handleAddPreset(preset)}
+              className="rounded-full border border-white/10 bg-white/5 px-3 py-1.5 text-xs font-medium text-white/70 transition-all hover:border-white/20 hover:bg-white/10"
             >
-              {CIRCUIT_TYPES.map((t) => (
-                <option key={t.value} value={t.value}>{t.label}</option>
-              ))}
-            </select>
+              + {preset.name}
+            </motion.button>
+          ))}
+        </div>
+      </div>
 
-            <input
-              type="text"
-              placeholder="Tensão"
-              value={voltage}
-              onChange={(e) => setVoltage(e.target.value)}
-              className="w-24 rounded-md border border-input bg-background px-3 py-2 text-sm"
-            />
-
-            <Button onClick={handleAdd}>Adicionar</Button>
-          </div>
-        </CardContent>
-      </Card>
+      {/* Custom Circuit */}
+      <div className="flex gap-2">
+        <input
+          type="text"
+          value={customName}
+          onChange={(e) => setCustomName(e.target.value)}
+          placeholder="Nome do circuito personalizado"
+          className="flex-1 rounded-lg border border-white/10 bg-white/5 px-4 py-2 text-sm text-white placeholder:text-white/30 focus:border-blue-500/50 focus:outline-none"
+        />
+        <button
+          onClick={handleAddCustom}
+          className="rounded-lg bg-blue-500/20 px-4 py-2 text-sm font-medium text-blue-400 transition-all hover:bg-blue-500/30"
+        >
+          Adicionar
+        </button>
+      </div>
 
       {/* Circuit List */}
-      <div className="space-y-3">
+      <div className="space-y-2">
         <AnimatePresence>
-          {circuits.map((circuit) => (
+          {circuits.map((circuit, i) => (
             <motion.div
               key={circuit.id}
-              initial={{ opacity: 0, height: 0 }}
-              animate={{ opacity: 1, height: 'auto' }}
-              exit={{ opacity: 0, height: 0 }}
-              transition={{ duration: 0.2 }}
-              className="overflow-hidden"
+              initial={{ opacity: 0, x: -20 }}
+              animate={{ opacity: 1, x: 0 }}
+              exit={{ opacity: 0, x: 20 }}
+              transition={{ delay: i * 0.05 }}
+              className="flex items-center justify-between rounded-lg border border-white/5 bg-white/[0.02] px-4 py-3"
             >
-              <Card className="flex items-center gap-4 px-4 py-3">
-                <span
-                  className="h-4 w-4 shrink-0 rounded-full"
-                  style={{ backgroundColor: circuit.color }}
-                />
-                <div className="flex-1">
-                  <div className="text-sm font-medium">{circuit.name}</div>
-                  <div className="text-xs text-muted-foreground">
-                    {circuit.type} · {circuit.voltage}
-                  </div>
-                </div>
-                <button
-                  onClick={() => removeCircuit(circuit.id)}
-                  className="rounded p-1 text-muted-foreground transition-colors hover:bg-destructive/10 hover:text-destructive"
-                >
-                  ✕
-                </button>
-              </Card>
+              <div className="flex items-center gap-3">
+                <div className="h-3 w-3 rounded-full" style={{ backgroundColor: circuit.color }} />
+                <span className="text-sm text-white/80">{circuit.name}</span>
+                <span className="rounded bg-white/10 px-1.5 py-0.5 text-[10px] text-white/40">{circuit.voltage}</span>
+              </div>
+              <button
+                onClick={() => removeCircuit(circuit.id)}
+                className="text-white/30 hover:text-red-400"
+              >
+                ✕
+              </button>
             </motion.div>
           ))}
         </AnimatePresence>
-
         {circuits.length === 0 && (
-          <div className="flex flex-col items-center justify-center rounded-xl border border-dashed py-12 text-muted-foreground">
-            <p className="text-sm">Nenhum circuito definido.</p>
-            <p className="mt-1 text-xs">Use os atalhos acima ou crie um personalizado.</p>
-          </div>
+          <p className="py-8 text-center text-sm text-white/30">Nenhum circuito adicionado</p>
         )}
+      </div>
+
+      {/* Navigation */}
+      <div className="flex justify-between">
+        <button onClick={prevStep} className="rounded-lg border border-white/10 bg-white/5 px-6 py-3 text-sm font-medium text-white/70">
+          ← Voltar
+        </button>
+        <button onClick={nextStep} className="rounded-lg bg-gradient-to-r from-blue-500 to-cyan-400 px-6 py-3 text-sm font-semibold text-white shadow-lg shadow-blue-500/20">
+          Próximo →
+        </button>
       </div>
     </div>
   );
