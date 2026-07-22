@@ -1,4 +1,4 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
 import { Prisma } from '@prisma/client';
 import { PrismaService } from '../../prisma/prisma.service';
 import { TenantContext } from '../../tenancy/tenant-context.decorator';
@@ -32,6 +32,7 @@ export class PanelBuilderService {
         take: limit,
         include: {
           componentCategory: { select: { id: true, code: true, name: true } },
+          _count: { select: { placements: true } },
         },
         orderBy: { componentCategoryId: 'asc' },
       }),
