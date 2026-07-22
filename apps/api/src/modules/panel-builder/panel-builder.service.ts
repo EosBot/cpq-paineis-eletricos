@@ -84,7 +84,6 @@ export class PanelBuilderService {
     return this.prisma.configuration.create({
       data: {
         tenantId: tc.tenantId,
-        quoteId: `quote-draft-${Date.now()}`,
         name: data.name,
         panelType: data.panelType,
         enclosureWidthMm: data.enclosureWidthMm,

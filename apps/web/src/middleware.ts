@@ -8,7 +8,6 @@ export async function middleware(request: NextRequest) {
 
   const isPublicRoute = pathname === '/login';
   const isSuperAdminRoute = pathname.startsWith('/admin');
-  const isProtectedRoute = pathname.startsWith('/configure') || isSuperAdminRoute;
 
   if (isPublicRoute) {
     if (session) {
@@ -17,7 +16,7 @@ export async function middleware(request: NextRequest) {
     return NextResponse.next();
   }
 
-  if (isProtectedRoute && !session) {
+  if (!session) {
     const loginUrl = new URL('/login', request.url);
     return NextResponse.redirect(loginUrl);
   }

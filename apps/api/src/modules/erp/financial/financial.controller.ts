@@ -5,79 +5,196 @@ import {
   Param,
   Post,
   Query,
+  UseGuards,
 } from '@nestjs/common';
+import { AuthGuard } from '@nestjs/passport';
 import { AccountType } from '@prisma/client';
+import {
+  ArrayMinSize,
+  IsArray,
+  IsBoolean,
+  IsDecimal,
+  IsEnum,
+  IsISO8601,
+  IsOptional,
+  IsString,
+  MaxLength,
+  ValidateNested,
+} from 'class-validator';
+import { Type } from 'class-transformer';
+import { Roles } from '../../../auth/roles.decorator';
+import { RolesGuard } from '../../../auth/roles.guard';
+import { TenantContext } from '../../../tenancy/tenant-context.decorator';
+import { type ITenantContext } from '../../../tenancy/tenant-context';
 import { FinancialService } from './financial.service';
 
 class CreateAccountDto {
+  @IsString()
+  @MaxLength(40)
   code!: string;
+
+  @IsString()
+  @MaxLength(160)
   name!: string;
+
+  @IsEnum(AccountType)
   type!: AccountType;
+
+  @IsOptional()
+  @IsString()
   parentAccountId?: string;
+
+  @IsOptional()
+  @IsBoolean()
   isAnalytical?: boolean;
 }
 
 class CreateTransactionDto {
+  @IsString()
   accountId!: string;
+
+  @IsString()
+  @MaxLength(40)
   type!: string;
+
+  @IsDecimal({ decimal_digits: '0,4' })
   amount!: string;
+
+  @IsEnum(['CREDIT', 'DEBIT'])
   direction!: 'CREDIT' | 'DEBIT';
+
+  @IsOptional()
+  @IsISO8601()
   dueDate?: string;
+
+  @IsOptional()
+  @IsISO8601()
   paidDate?: string;
+
+  @IsOptional()
+  @IsString()
+  @MaxLength(60)
   referenceType?: string;
+
+  @IsOptional()
+  @IsString()
   referenceId?: string;
+
+  @IsOptional()
+  @IsString()
+  @MaxLength(500)
   description?: string;
+
+  @IsOptional()
+  @IsString()
+  @MaxLength(160)
   counterpartName?: string;
+
+  @IsOptional()
+  @IsString()
+  @MaxLength(40)
   counterpartTaxId?: string;
+
+  @IsOptional()
+  @IsString()
+  @MaxLength(40)
   paymentMethod?: string;
+
+  @IsOptional()
+  @IsString()
+  @MaxLength(500)
   notes?: string;
 }
 
+class CreateBankAccountDto {
+  @IsString()
+  @MaxLength(160)
+  name!: string;
+
+  @IsOptional()
+  @IsString()
+  @MaxLength(10)
+  bankCode?: string;
+
+  @IsOptional()
+  @IsString()
+  @MaxLength(20)
+  agency?: string;
+
+  @IsOptional()
+  @IsString()
+  @MaxLength(30)
+  accountNumber?: string;
+}
+
+class BankTransactionItemDto {
+  @IsISO8601()
+  transactionDate!: string;
+
+  @IsOptional()
+  @IsString()
+  @MaxLength(500)
+  description?: string;
+
+  @IsDecimal({ decimal_digits: '0,4' })
+  amount!: string;
+
+  @IsEnum(['CREDIT', 'DEBIT'])
+  direction!: 'CREDIT' | 'DEBIT';
+
+  @IsOptional()
+  @IsString()
+  @MaxLength(60)
+  fitid?: string;
+}
+
 class ImportBankTransactionsDto {
+  @IsString()
   bankAccountId!: string;
-  transactions!: Array<{
-    transactionDate: string;
-    description?: string;
-    amount: string;
-    direction: 'CREDIT' | 'DEBIT';
-    fitid?: string;
-  }>;
+
+  @IsArray()
+  @ArrayMinSize(1)
+  @ValidateNested({ each: true })
+  @Type(() => BankTransactionItemDto)
+  transactions!: BankTransactionItemDto[];
 }
 
 @Controller('erp/financial')
+@UseGuards(AuthGuard('jwt'), RolesGuard)
 export class FinancialController {
   constructor(private readonly financialService: FinancialService) {}
 
   @Post('accounts')
-  createAccount(@Body() dto: CreateAccountDto, @Query('tenantId') tenantId: string) {
-    return this.financialService.createAccount(tenantId, dto);
+  @Roles('admin')
+  createAccount(@TenantContext() tc: ITenantContext, @Body() dto: CreateAccountDto) {
+    return this.financialService.createAccount(tc.tenantId, dto);
   }
 
   @Get('accounts')
+  @Roles('admin', 'engineer', 'sales')
   listAccounts(
-    @Query('tenantId') tenantId: string,
+    @TenantContext() tc: ITenantContext,
     @Query('type') type?: AccountType,
   ) {
-    return this.financialService.listAccounts(tenantId, type);
+    return this.financialService.listAccounts(tc.tenantId, type);
   }
 
   @Post('transactions')
-  createTransaction(
-    @Body() dto: CreateTransactionDto,
-    @Query('tenantId') tenantId: string,
-  ) {
-    return this.financialService.createTransaction(tenantId, dto);
+  @Roles('admin')
+  createTransaction(@TenantContext() tc: ITenantContext, @Body() dto: CreateTransactionDto) {
+    return this.financialService.createTransaction(tc.tenantId, dto);
   }
 
   @Get('transactions')
+  @Roles('admin', 'engineer', 'sales')
   listTransactions(
-    @Query('tenantId') tenantId: string,
+    @TenantContext() tc: ITenantContext,
     @Query('accountId') accountId?: string,
     @Query('status') status?: string,
     @Query('fromDate') fromDate?: string,
     @Query('toDate') toDate?: string,
   ) {
-    return this.financialService.listTransactions(tenantId, {
+    return this.financialService.listTransactions(tc.tenantId, {
       accountId,
       status,
       fromDate,
@@ -86,40 +203,45 @@ export class FinancialController {
   }
 
   @Get('aging-report')
-  getAgingReport(@Query('tenantId') tenantId: string) {
-    return this.financialService.getAgingReport(tenantId);
+  @Roles('admin', 'sales')
+  getAgingReport(@TenantContext() tc: ITenantContext) {
+    return this.financialService.getAgingReport(tc.tenantId);
   }
 
   @Post('bank-accounts')
+  @Roles('admin')
   createBankAccount(
-    @Body() dto: { name: string; bankCode?: string; agency?: string; accountNumber?: string },
-    @Query('tenantId') tenantId: string,
+    @TenantContext() tc: ITenantContext,
+    @Body() dto: CreateBankAccountDto,
   ) {
-    return this.financialService.createBankAccount(tenantId, dto);
+    return this.financialService.createBankAccount(tc.tenantId, dto);
   }
 
   @Get('bank-accounts')
-  listBankAccounts(@Query('tenantId') tenantId: string) {
-    return this.financialService.listBankAccounts(tenantId);
+  @Roles('admin', 'engineer', 'sales')
+  listBankAccounts(@TenantContext() tc: ITenantContext) {
+    return this.financialService.listBankAccounts(tc.tenantId);
   }
 
   @Post('bank-accounts/import')
+  @Roles('admin')
   importBankTransactions(
+    @TenantContext() tc: ITenantContext,
     @Body() dto: ImportBankTransactionsDto,
-    @Query('tenantId') tenantId: string,
   ) {
     return this.financialService.importBankTransactions(
-      tenantId,
+      tc.tenantId,
       dto.bankAccountId,
       dto.transactions,
     );
   }
 
   @Get('bank-accounts/:id/reconciliation')
+  @Roles('admin')
   getBankReconciliation(
+    @TenantContext() tc: ITenantContext,
     @Param('id') id: string,
-    @Query('tenantId') tenantId: string,
   ) {
-    return this.financialService.getBankReconciliation(tenantId, id);
+    return this.financialService.getBankReconciliation(tc.tenantId, id);
   }
 }

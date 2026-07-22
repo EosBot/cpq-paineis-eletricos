@@ -118,14 +118,16 @@ export class ConfigurationsService {
         },
       });
 
-      await transaction.quote.update({
-        where: {
-          id: configuration.quoteId,
-        },
-        data: {
-          status: QuoteStatus.INTERNAL_REVIEW,
-        },
-      });
+      if (configuration.quoteId) {
+        await transaction.quote.update({
+          where: {
+            id: configuration.quoteId,
+          },
+          data: {
+            status: QuoteStatus.INTERNAL_REVIEW,
+          },
+        });
+      }
 
       return snapshot;
     });

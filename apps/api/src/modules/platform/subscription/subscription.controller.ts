@@ -5,35 +5,54 @@ import {
   Param,
   Patch,
   Post,
-  Query,
+  UseGuards,
 } from '@nestjs/common';
-import { SubscriptionStatus } from '@prisma/client';
+import { AuthGuard } from '@nestjs/passport';
+import { IsEnum, IsInt, IsOptional, IsString, MaxLength, Min } from 'class-validator';
+import { Roles } from '../../../auth/roles.decorator';
+import { RolesGuard } from '../../../auth/roles.guard';
+import { TenantContext } from '../../../tenancy/tenant-context.decorator';
+import { type ITenantContext } from '../../../tenancy/tenant-context';
 import { SubscriptionService } from './subscription.service';
 
 class CreateSubscriptionDto {
+  @IsString()
   planId!: string;
+
+  @IsOptional()
+  @IsString()
+  @MaxLength(120)
   stripeCustomerId?: string;
+
+  @IsOptional()
+  @IsInt()
+  @Min(0)
   trialDays?: number;
+
+  @IsOptional()
+  @IsEnum(['MONTHLY', 'YEARLY'])
   billingPeriod?: 'MONTHLY' | 'YEARLY';
 }
 
 class ChangePlanDto {
+  @IsString()
   planId!: string;
+
+  @IsOptional()
+  @IsEnum(['MONTHLY', 'YEARLY'])
   billingPeriod?: 'MONTHLY' | 'YEARLY';
 }
 
-class SubscriptionQueryDto {
-  tenantId!: string;
-}
-
 @Controller('subscriptions')
+@UseGuards(AuthGuard('jwt'), RolesGuard)
 export class SubscriptionController {
   constructor(private readonly subscriptionService: SubscriptionService) {}
 
   @Post()
-  create(@Body() dto: CreateSubscriptionDto) {
+  @Roles('admin')
+  create(@TenantContext() tc: ITenantContext, @Body() dto: CreateSubscriptionDto) {
     return this.subscriptionService.create({
-      tenantId: dto.planId,
+      tenantId: tc.tenantId,
       planId: dto.planId,
       stripeCustomerId: dto.stripeCustomerId,
       trialDays: dto.trialDays,
@@ -42,31 +61,36 @@ export class SubscriptionController {
   }
 
   @Get('current')
-  findCurrent(@Query('tenantId') tenantId: string) {
-    return this.subscriptionService.findCurrent(tenantId);
+  @Roles('admin', 'engineer', 'sales')
+  findCurrent(@TenantContext() tc: ITenantContext) {
+    return this.subscriptionService.findCurrent(tc.tenantId);
   }
 
   @Get(':tenantId')
+  @Roles('admin')
   findByTenant(@Param('tenantId') tenantId: string) {
     return this.subscriptionService.findCurrent(tenantId);
   }
 
   @Patch('change-plan')
-  changePlan(@Query('tenantId') tenantId: string, @Body() dto: ChangePlanDto) {
+  @Roles('admin')
+  changePlan(@TenantContext() tc: ITenantContext, @Body() dto: ChangePlanDto) {
     return this.subscriptionService.changePlan(
-      tenantId,
+      tc.tenantId,
       dto.planId,
       dto.billingPeriod,
     );
   }
 
   @Post('cancel')
-  cancel(@Query('tenantId') tenantId: string) {
-    return this.subscriptionService.cancel(tenantId);
+  @Roles('admin')
+  cancel(@TenantContext() tc: ITenantContext) {
+    return this.subscriptionService.cancel(tc.tenantId);
   }
 
   @Post('reactivate')
-  reactivate(@Query('tenantId') tenantId: string) {
-    return this.subscriptionService.reactivate(tenantId);
+  @Roles('admin')
+  reactivate(@TenantContext() tc: ITenantContext) {
+    return this.subscriptionService.reactivate(tc.tenantId);
   }
 }

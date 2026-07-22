@@ -8,8 +8,8 @@ import { Button } from '@/components/ui/button';
 
 export default function LoginPage() {
   const router = useRouter();
-  const [email, setEmail] = useState('admin@paineisdemo.com');
-  const [password, setPassword] = useState('SenhaForte@123');
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
   const [tenantId, setTenantId] = useState('');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
@@ -110,9 +110,7 @@ export default function LoginPage() {
             </Button>
           </form>
 
-          <p className="mt-6 text-center text-xs text-muted-foreground">
-            Demo: admin@paineisdemo.com / SenhaForte@123
-          </p>
+
         </div>
       </motion.div>
     </div>

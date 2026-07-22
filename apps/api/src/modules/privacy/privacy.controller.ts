@@ -24,21 +24,25 @@ export class PrivacyController {
   }
 
   @Get('consents')
+  @Roles('admin', 'engineer', 'sales')
   getMyConsents(@TenantContext() tc: ITenantContext, @Req() req: any) {
     return this.privacyService.getUserConsents(tc, req.user.sub);
   }
 
   @Post('consents')
+  @Roles('admin', 'engineer', 'sales')
   grantConsent(@TenantContext() tc: ITenantContext, @Body() data: { purpose: string; purposeDescription: string; legalBasis: string }, @Req() req: any) {
     return this.privacyService.grantConsent(tc, { ...data, userId: req.user.sub });
   }
 
   @Patch('consents/:id/revoke')
+  @Roles('admin', 'engineer', 'sales')
   revokeConsent(@TenantContext() tc: ITenantContext, @Param('id') id: string) {
     return this.privacyService.revokeConsent(tc, id);
   }
 
   @Post('data-request')
+  @Roles('admin', 'engineer', 'sales')
   createDataSubjectRequest(
     @TenantContext() tc: ITenantContext,
     @Body() data: { requestType: string; description?: string },
@@ -60,11 +64,13 @@ export class PrivacyController {
   }
 
   @Get('export-data')
+  @Roles('admin', 'engineer', 'sales')
   exportUserData(@TenantContext() tc: ITenantContext, @Req() req: any) {
     return this.privacyService.exportUserData(tc, req.user.sub);
   }
 
   @Post('delete-data')
+  @Roles('admin', 'engineer', 'sales')
   deleteUserData(@TenantContext() tc: ITenantContext, @Body() data: { anonymize: boolean }, @Req() req: any) {
     return this.privacyService.deleteUserData(tc, req.user.sub, data.anonymize);
   }

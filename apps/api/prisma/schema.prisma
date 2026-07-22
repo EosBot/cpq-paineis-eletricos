@@ -323,7 +323,7 @@ model ComponentAttribute {
 model Configuration {
   id                 String                  @id @default(cuid())
   tenantId           String
-  quoteId            String                  @unique
+  quoteId            String?                 @unique
   name               String                  @db.VarChar(160)
   status             QuoteStatus             @default(DRAFT)
 
@@ -348,7 +348,7 @@ model Configuration {
   updatedAt          DateTime                @updatedAt
 
   tenant             Tenant                  @relation(fields: [tenantId], references: [id], onDelete: Cascade)
-  quote              Quote                   @relation(fields: [quoteId], references: [id], onDelete: Cascade)
+   quote              Quote?                  @relation(fields: [quoteId], references: [id], onDelete: Cascade)
   items              ConfigurationItem[]
   snapshots          ConfigurationSnapshot[]
   rails              DINRail[]

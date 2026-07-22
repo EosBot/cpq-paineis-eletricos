@@ -5,47 +5,55 @@ import {
   Param,
   Post,
   Query,
+  UseGuards,
 } from '@nestjs/common';
+import { AuthGuard } from '@nestjs/passport';
 import { InventoryService } from './inventory.service';
 import { CreateProductDto } from './dto/create-product.dto';
 import { CreateStockMovementDto } from './dto/create-stock-movement.dto';
-import { ITenantContext } from '../../../tenancy/tenant-context';
+import { Roles } from '../../../auth/roles.decorator';
+import { RolesGuard } from '../../../auth/roles.guard';
+import { TenantContext } from '../../../tenancy/tenant-context.decorator';
+import { type ITenantContext } from '../../../tenancy/tenant-context';
 
 @Controller('erp/inventory')
+@UseGuards(AuthGuard('jwt'), RolesGuard)
 export class InventoryController {
   constructor(private readonly inventoryService: InventoryService) {}
 
   @Post('products')
-  createProduct(@Body() dto: CreateProductDto, @Query('tenantId') tenantId: string) {
-    return this.inventoryService.createProduct(tenantId, dto);
+  @Roles('admin', 'engineer')
+  createProduct(@TenantContext() tc: ITenantContext, @Body() dto: CreateProductDto) {
+    return this.inventoryService.createProduct(tc.tenantId, dto);
   }
 
   @Get('products')
+  @Roles('admin', 'engineer', 'sales')
   listProducts(
-    @Query('tenantId') tenantId: string,
+    @TenantContext() tc: ITenantContext,
     @Query('includeInactive') includeInactive?: string,
   ) {
-    return this.inventoryService.listProducts(tenantId, includeInactive === 'true');
+    return this.inventoryService.listProducts(tc.tenantId, includeInactive === 'true');
   }
 
   @Get('products/:id')
-  getProduct(@Param('id') id: string, @Query('tenantId') tenantId: string) {
-    return this.inventoryService.getProduct(tenantId, id);
+  @Roles('admin', 'engineer', 'sales')
+  getProduct(@TenantContext() tc: ITenantContext, @Param('id') id: string) {
+    return this.inventoryService.getProduct(tc.tenantId, id);
   }
 
   @Post('stock-movements')
-  createStockMovement(
-    @Body() dto: CreateStockMovementDto,
-    @Query('tenantId') tenantId: string,
-  ) {
-    return this.inventoryService.createStockMovement(tenantId, dto);
+  @Roles('admin', 'engineer')
+  createStockMovement(@TenantContext() tc: ITenantContext, @Body() dto: CreateStockMovementDto) {
+    return this.inventoryService.createStockMovement(tc.tenantId, dto);
   }
 
   @Get('stock-levels')
+  @Roles('admin', 'engineer', 'sales')
   getStockLevels(
-    @Query('tenantId') tenantId: string,
+    @TenantContext() tc: ITenantContext,
     @Query('productId') productId?: string,
   ) {
-    return this.inventoryService.getStockLevels(tenantId, productId);
+    return this.inventoryService.getStockLevels(tc.tenantId, productId);
   }
 }

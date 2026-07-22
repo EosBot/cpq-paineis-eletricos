@@ -7,31 +7,45 @@ import {
   Post,
   Req,
   RawBodyRequest,
+  UseGuards,
 } from '@nestjs/common';
 import { BadRequestException } from '@nestjs/common';
+import { AuthGuard } from '@nestjs/passport';
 import { IncomingMessage } from 'node:http';
+import { IsEmail, IsString, MaxLength } from 'class-validator';
+import { Roles } from '../../../auth/roles.decorator';
+import { RolesGuard } from '../../../auth/roles.guard';
+import { TenantContext } from '../../../tenancy/tenant-context.decorator';
+import { type ITenantContext } from '../../../tenancy/tenant-context';
 import { BillingService } from './billing.service';
 
 class CreateCheckoutSessionDto {
+  @IsEmail()
   customerEmail!: string;
+
+  @IsString()
+  @MaxLength(160)
   customerName!: string;
+
+  @IsString()
   planPriceId!: string;
-  tenantId!: string;
 }
 
 class CreatePortalSessionDto {
-  tenantId!: string;
+  @IsString()
   customerId!: string;
 }
 
 @Controller('billing')
+@UseGuards(AuthGuard('jwt'), RolesGuard)
 export class BillingController {
   constructor(private readonly billingService: BillingService) {}
 
   @Post('checkout-session')
-  createCheckoutSession(@Body() dto: CreateCheckoutSessionDto) {
+  @Roles('admin')
+  createCheckoutSession(@TenantContext() tc: ITenantContext, @Body() dto: CreateCheckoutSessionDto) {
     return this.billingService.createCheckoutSession({
-      tenantId: dto.tenantId,
+      tenantId: tc.tenantId,
       customerEmail: dto.customerEmail,
       customerName: dto.customerName,
       planPriceId: dto.planPriceId,
@@ -39,9 +53,10 @@ export class BillingController {
   }
 
   @Post('portal-session')
-  createPortalSession(@Body() dto: CreatePortalSessionDto) {
+  @Roles('admin')
+  createPortalSession(@TenantContext() tc: ITenantContext, @Body() dto: CreatePortalSessionDto) {
     return this.billingService.createPortalSession({
-      tenantId: dto.tenantId,
+      tenantId: tc.tenantId,
       customerId: dto.customerId,
     });
   }

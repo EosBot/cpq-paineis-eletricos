@@ -1,6 +1,7 @@
 import {
   CanActivate,
   ExecutionContext,
+  ForbiddenException,
   Injectable,
   UnauthorizedException,
 } from '@nestjs/common';
@@ -26,7 +27,7 @@ export class RolesGuard implements CanActivate {
     ]);
 
     if (!requiredRoles || requiredRoles.length === 0) {
-      return true;
+      throw new ForbiddenException('Role-based access control is required but no roles were specified.');
     }
 
     const request = context.switchToHttp().getRequest<IRequestWithUser>();
@@ -36,6 +37,10 @@ export class RolesGuard implements CanActivate {
       throw new UnauthorizedException('Role context is required.');
     }
 
-    return requiredRoles.includes(roleCode);
+    if (!requiredRoles.includes(roleCode)) {
+      throw new ForbiddenException('Insufficient permissions to access this resource.');
+    }
+
+    return true;
   }
 }
