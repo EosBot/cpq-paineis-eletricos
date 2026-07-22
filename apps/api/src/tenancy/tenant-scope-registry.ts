@@ -1,5 +1,4 @@
 const TENANT_SCOPED_MODELS = [
-  'Tenant',
   'Membership',
   'Role',
   'CustomerAccount',
@@ -20,6 +19,7 @@ const TENANT_SCOPED_MODELS = [
   'Order',
   'Shipment',
   'ShippingQuote',
+  'AuditLog',
 ] as const;
 
 export type TenantScopedModel = (typeof TENANT_SCOPED_MODELS)[number];

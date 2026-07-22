@@ -1,8 +1,9 @@
-import { Body, Controller, Get, Headers, Post, UseGuards } from '@nestjs/common';
+import { Body, Controller, Get, Post, UseGuards } from '@nestjs/common';
 import { AuthGuard } from '@nestjs/passport';
 import { Roles } from '../auth/roles.decorator';
 import { RolesGuard } from '../auth/roles.guard';
-import { createTenantContext } from '../tenancy/tenant-context';
+import { TenantContext } from '../tenancy/tenant-context.decorator';
+import { type ITenantContext } from '../tenancy/tenant-context';
 import { ApproveRuleVersionDto } from './dto/approve-rule-version.dto';
 import { CreateRuleDto } from './dto/create-rule.dto';
 import { CreateRuleVersionDto } from './dto/create-rule-version.dto';
@@ -15,46 +16,31 @@ export class RulesController {
 
   @Post()
   @Roles('admin', 'engineer')
-  createRule(
-    @Headers('x-tenant-id') tenantId: string,
-    @Headers('x-user-id') userId: string,
-    @Body() dto: CreateRuleDto,
-  ) {
-    return this.rulesService.createRule(createTenantContext(tenantId, userId), dto);
+  createRule(@TenantContext() tenantContext: ITenantContext, @Body() dto: CreateRuleDto) {
+    return this.rulesService.createRule(tenantContext, dto);
   }
 
   @Post('versions')
   @Roles('admin', 'engineer')
   createRuleVersion(
-    @Headers('x-tenant-id') tenantId: string,
-    @Headers('x-user-id') userId: string,
+    @TenantContext() tenantContext: ITenantContext,
     @Body() dto: CreateRuleVersionDto,
   ) {
-    return this.rulesService.createRuleVersion(
-      createTenantContext(tenantId, userId),
-      dto,
-    );
+    return this.rulesService.createRuleVersion(tenantContext, dto);
   }
 
   @Post('versions/approve')
   @Roles('admin')
   approveRuleVersion(
-    @Headers('x-tenant-id') tenantId: string,
-    @Headers('x-user-id') userId: string,
+    @TenantContext() tenantContext: ITenantContext,
     @Body() dto: ApproveRuleVersionDto,
   ) {
-    return this.rulesService.approveRuleVersion(
-      createTenantContext(tenantId, userId),
-      dto,
-    );
+    return this.rulesService.approveRuleVersion(tenantContext, dto);
   }
 
   @Get()
   @Roles('admin', 'engineer', 'sales')
-  listRules(
-    @Headers('x-tenant-id') tenantId: string,
-    @Headers('x-user-id') userId: string,
-  ) {
-    return this.rulesService.listRules(createTenantContext(tenantId, userId));
+  listRules(@TenantContext() tenantContext: ITenantContext) {
+    return this.rulesService.listRules(tenantContext);
   }
 }

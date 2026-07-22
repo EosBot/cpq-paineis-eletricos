@@ -1,0 +1,474 @@
+openapi: 3.0.0
+paths:
+  /auth/login:
+    post:
+      operationId: AuthController_login
+      parameters: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LoginDto'
+      responses:
+        '201':
+          description: ''
+  /auth/refresh:
+    post:
+      operationId: AuthController_refresh
+      parameters: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RefreshTokenDto'
+      responses:
+        '201':
+          description: ''
+  /auth/validate:
+    post:
+      operationId: AuthController_validate
+      parameters: []
+      responses:
+        '201':
+          description: ''
+  /audit-logs:
+    get:
+      operationId: AuditController_list
+      summary: Lista registros de auditoria do tenant (mais recentes primeiro)
+      parameters: []
+      responses:
+        '200':
+          description: Lista paginada de registros de auditoria.
+      tags:
+        - Audit
+      security:
+        - bearer: []
+  /catalog/component-categories:
+    post:
+      operationId: ComponentCategoriesController_create
+      parameters: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateComponentCategoryDto'
+      responses:
+        '201':
+          description: ''
+    get:
+      operationId: ComponentCategoriesController_list
+      parameters: []
+      responses:
+        '200':
+          description: ''
+  /catalog/components:
+    post:
+      operationId: ComponentsController_create
+      parameters: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateComponentDto'
+      responses:
+        '201':
+          description: ''
+    get:
+      operationId: ComponentsController_list
+      parameters: []
+      responses:
+        '200':
+          description: ''
+  /configurations:
+    post:
+      operationId: ConfigurationsController_create
+      parameters: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateConfigurationDto'
+      responses:
+        '201':
+          description: ''
+    get:
+      operationId: ConfigurationsController_list
+      parameters: []
+      responses:
+        '200':
+          description: ''
+  /configurations/submit-for-review:
+    post:
+      operationId: ConfigurationsController_submitForReview
+      parameters: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SubmitConfigurationForReviewDto'
+      responses:
+        '201':
+          description: ''
+  /pricing/quotes/{quoteId}/context:
+    get:
+      operationId: PricingController_resolvePricingContext
+      parameters:
+        - name: quoteId
+          required: true
+          in: path
+          schema:
+            type: string
+      responses:
+        '200':
+          description: ''
+  /rules:
+    post:
+      operationId: RulesController_createRule
+      parameters: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateRuleDto'
+      responses:
+        '201':
+          description: ''
+    get:
+      operationId: RulesController_listRules
+      parameters: []
+      responses:
+        '200':
+          description: ''
+  /rules/versions:
+    post:
+      operationId: RulesController_createRuleVersion
+      parameters: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateRuleVersionDto'
+      responses:
+        '201':
+          description: ''
+  /rules/versions/approve:
+    post:
+      operationId: RulesController_approveRuleVersion
+      parameters: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ApproveRuleVersionDto'
+      responses:
+        '201':
+          description: ''
+  /quotes:
+    post:
+      operationId: QuotesController_create
+      parameters: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateQuoteDto'
+      responses:
+        '201':
+          description: ''
+    get:
+      operationId: QuotesController_list
+      parameters: []
+      responses:
+        '200':
+          description: ''
+  /quotes/{quoteId}/calculate:
+    post:
+      operationId: QuotesController_calculate
+      parameters:
+        - name: quoteId
+          required: true
+          in: path
+          schema:
+            type: string
+      responses:
+        '201':
+          description: ''
+  /quotes/send:
+    post:
+      operationId: QuotesController_send
+      parameters: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SendQuoteDto'
+      responses:
+        '201':
+          description: ''
+  /quotes/customer-approve:
+    post:
+      operationId: QuotesController_customerApprove
+      parameters: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CustomerApproveQuoteDto'
+      responses:
+        '201':
+          description: ''
+  /quotes/reopen:
+    post:
+      operationId: QuotesController_reopen
+      parameters: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ReopenQuoteDto'
+      responses:
+        '201':
+          description: ''
+  /bom/versions:
+    post:
+      operationId: BomController_generate
+      parameters: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/GenerateBomVersionDto'
+      responses:
+        '201':
+          description: ''
+    get:
+      operationId: BomController_list
+      parameters:
+        - name: quoteId
+          required: true
+          in: query
+          schema:
+            type: string
+      responses:
+        '200':
+          description: ''
+  /orders/convert:
+    post:
+      operationId: OrdersController_convert
+      parameters: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ConvertQuoteToOrderDto'
+      responses:
+        '201':
+          description: ''
+  /orders/{orderId}/advance:
+    post:
+      operationId: OrdersController_advance
+      parameters:
+        - name: orderId
+          required: true
+          in: path
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AdvanceOrderDto'
+      responses:
+        '201':
+          description: ''
+  /orders:
+    get:
+      operationId: OrdersController_list
+      parameters: []
+      responses:
+        '200':
+          description: ''
+  /orders/{orderId}:
+    get:
+      operationId: OrdersController_get
+      parameters:
+        - name: orderId
+          required: true
+          in: path
+          schema:
+            type: string
+      responses:
+        '200':
+          description: ''
+  /shipments:
+    post:
+      operationId: ShipmentsController_create
+      parameters: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateShipmentDto'
+      responses:
+        '201':
+          description: ''
+    get:
+      operationId: ShipmentsController_list
+      parameters: []
+      responses:
+        '200':
+          description: ''
+  /shipments/{shipmentId}/shipping-quotes:
+    post:
+      operationId: ShipmentsController_addShippingQuote
+      parameters:
+        - name: shipmentId
+          required: true
+          in: path
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AddShippingQuoteDto'
+      responses:
+        '201':
+          description: ''
+  /shipments/shipping-quotes/select:
+    post:
+      operationId: ShipmentsController_selectShippingQuote
+      parameters: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SelectShippingQuoteDto'
+      responses:
+        '201':
+          description: ''
+  /shipments/{shipmentId}/advance:
+    post:
+      operationId: ShipmentsController_advance
+      parameters:
+        - name: shipmentId
+          required: true
+          in: path
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AdvanceShipmentDto'
+      responses:
+        '201':
+          description: ''
+  /shipments/{shipmentId}:
+    get:
+      operationId: ShipmentsController_get
+      parameters:
+        - name: shipmentId
+          required: true
+          in: path
+          schema:
+            type: string
+      responses:
+        '200':
+          description: ''
+info:
+  title: CPQ Painéis Elétricos API
+  description: API de Configure-Price-Quote para painéis elétricos (vertical validado).
+  version: '1.0'
+  contact: {}
+tags: []
+servers:
+  - url: http://localhost:3000
+    description: Local
+components:
+  securitySchemes:
+    bearer:
+      scheme: bearer
+      bearerFormat: JWT
+      type: http
+  schemas:
+    LoginDto:
+      type: object
+      properties: {}
+    RefreshTokenDto:
+      type: object
+      properties: {}
+    CreateComponentCategoryDto:
+      type: object
+      properties: {}
+    CreateComponentDto:
+      type: object
+      properties: {}
+    CreateConfigurationDto:
+      type: object
+      properties: {}
+    SubmitConfigurationForReviewDto:
+      type: object
+      properties: {}
+    CreateRuleDto:
+      type: object
+      properties: {}
+    CreateRuleVersionDto:
+      type: object
+      properties: {}
+    ApproveRuleVersionDto:
+      type: object
+      properties: {}
+    CreateQuoteDto:
+      type: object
+      properties: {}
+    SendQuoteDto:
+      type: object
+      properties: {}
+    CustomerApproveQuoteDto:
+      type: object
+      properties: {}
+    ReopenQuoteDto:
+      type: object
+      properties: {}
+    GenerateBomVersionDto:
+      type: object
+      properties: {}
+    ConvertQuoteToOrderDto:
+      type: object
+      properties: {}
+    AdvanceOrderDto:
+      type: object
+      properties: {}
+    CreateShipmentDto:
+      type: object
+      properties: {}
+    AddShippingQuoteDto:
+      type: object
+      properties: {}
+    SelectShippingQuoteDto:
+      type: object
+      properties: {}
+    AdvanceShipmentDto:
+      type: object
+      properties: {}

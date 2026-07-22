@@ -3,6 +3,7 @@ import { OrderStatus, Prisma, QuoteStatus } from '@prisma/client';
 import { BomService } from '../bom/bom.service';
 import { PrismaService } from '../prisma/prisma.service';
 import { type ITenantContext } from '../tenancy/tenant-context';
+import { getTenantContextFromStorage } from '../tenancy/tenant-context.storage';
 import { AdvanceOrderDto } from './dto/advance-order.dto';
 import { ConvertQuoteToOrderDto } from './dto/convert-quote-to-order.dto';
 
@@ -22,13 +23,17 @@ export class OrdersService {
   ) {}
 
   async convertQuoteToOrder(tenantContext: ITenantContext, dto: ConvertQuoteToOrderDto) {
-    const order = await this.prismaService.$transaction(async (transaction) => {
-      const quote = await transaction.quote.findFirstOrThrow({
+    const order = await this.prismaService.$transactionWithRLS(tenantContext.tenantId, async (transaction) => {
+      const quote = await transaction.quote.findFirst({
         where: { id: dto.quoteId, tenantId: tenantContext.tenantId },
         include: {
           versions: { orderBy: { versionNumber: 'desc' }, take: 1 },
         },
       });
+
+      if (!quote) {
+        throw new BadRequestException('Quote not found.');
+      }
 
       if (quote.status !== QuoteStatus.CUSTOMER_APPROVED) {
         throw new BadRequestException(
@@ -64,6 +69,8 @@ export class OrdersService {
       });
     });
 
+    await this.prismaService.setTenantContext(tenantContext.tenantId);
+
     const quoteVersion = await this.prismaService.quoteVersion.findFirstOrThrow({
       where: { id: order.quoteVersionId, tenantId: tenantContext.tenantId },
     });
@@ -87,7 +94,7 @@ export class OrdersService {
   }
 
   async advanceOrder(tenantContext: ITenantContext, dto: AdvanceOrderDto) {
-    return this.prismaService.$transaction(async (transaction) => {
+    return this.prismaService.$transactionWithRLS(tenantContext.tenantId, async (transaction) => {
       const order = await transaction.order.findFirstOrThrow({
         where: { id: dto.orderId, tenantId: tenantContext.tenantId },
       });

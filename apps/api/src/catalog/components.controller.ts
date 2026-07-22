@@ -1,8 +1,9 @@
-import { Body, Controller, Get, Headers, Post, UseGuards } from '@nestjs/common';
+import { Body, Controller, Get, Post, UseGuards } from '@nestjs/common';
 import { AuthGuard } from '@nestjs/passport';
 import { Roles } from '../auth/roles.decorator';
 import { RolesGuard } from '../auth/roles.guard';
-import { createTenantContext } from '../tenancy/tenant-context';
+import { TenantContext } from '../tenancy/tenant-context.decorator';
+import { type ITenantContext } from '../tenancy/tenant-context';
 import { CatalogService } from './catalog.service';
 import { CreateComponentDto } from './dto/create-component.dto';
 
@@ -13,20 +14,13 @@ export class ComponentsController {
 
   @Post()
   @Roles('admin', 'engineer')
-  create(
-    @Headers('x-tenant-id') tenantId: string,
-    @Headers('x-user-id') userId: string,
-    @Body() dto: CreateComponentDto,
-  ) {
-    return this.catalogService.createComponent(
-      createTenantContext(tenantId, userId),
-      dto,
-    );
+  create(@TenantContext() tenantContext: ITenantContext, @Body() dto: CreateComponentDto) {
+    return this.catalogService.createComponent(tenantContext, dto);
   }
 
   @Get()
   @Roles('admin', 'engineer', 'sales')
-  list(@Headers('x-tenant-id') tenantId: string, @Headers('x-user-id') userId: string) {
-    return this.catalogService.listComponents(createTenantContext(tenantId, userId));
+  list(@TenantContext() tenantContext: ITenantContext) {
+    return this.catalogService.listComponents(tenantContext);
   }
 }

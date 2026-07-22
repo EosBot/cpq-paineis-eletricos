@@ -2,6 +2,7 @@ import { Injectable } from '@nestjs/common';
 import { QuoteStatus, Prisma } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
 import { type ITenantContext } from '../tenancy/tenant-context';
+import { getTenantContextFromStorage } from '../tenancy/tenant-context.storage';
 import { CreateConfigurationDto } from './dto/create-configuration.dto';
 import { SubmitConfigurationForReviewDto } from './dto/submit-configuration-for-review.dto';
 
@@ -13,6 +14,7 @@ export class ConfigurationsService {
     tenantContext: ITenantContext,
     dto: CreateConfigurationDto,
   ) {
+    await this.prismaService.setTenantContext(tenantContext.tenantId);
     return this.prismaService.configuration.create({
       data: {
         tenantId: tenantContext.tenantId,
@@ -27,7 +29,7 @@ export class ConfigurationsService {
           create: dto.items.map((item) => ({
             tenantId: tenantContext.tenantId,
             componentId: item.componentId,
-            quantity: item.quantity,
+            quantity: new Prisma.Decimal(item.quantity),
             positionKey: item.positionKey,
             metadata:
               item.metadata === undefined
@@ -61,7 +63,7 @@ export class ConfigurationsService {
     tenantContext: ITenantContext,
     dto: SubmitConfigurationForReviewDto,
   ) {
-    return this.prismaService.$transaction(async (transaction) => {
+    return this.prismaService.$transactionWithRLS(tenantContext.tenantId, async (transaction) => {
       const configuration = await transaction.configuration.findFirstOrThrow({
         where: {
           id: dto.configurationId,

@@ -1,5 +1,6 @@
 import {
   IsArray,
+  IsInt,
   IsObject,
   IsOptional,
   IsString,
@@ -12,8 +13,9 @@ class CreateConfigurationItemDto {
   @IsString()
   componentId!: string;
 
-  @IsString()
-  quantity!: string;
+  @Type(() => Number)
+  @IsInt()
+  quantity!: number;
 
   @IsOptional()
   @IsString()

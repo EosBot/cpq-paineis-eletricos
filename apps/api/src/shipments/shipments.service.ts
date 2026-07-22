@@ -2,6 +2,7 @@ import { BadRequestException, Injectable } from '@nestjs/common';
 import { Prisma, ShipmentStatus } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
 import { type ITenantContext } from '../tenancy/tenant-context';
+import { getTenantContextFromStorage } from '../tenancy/tenant-context.storage';
 import { AddShippingQuoteDto } from './dto/add-shipping-quote.dto';
 import { AdvanceShipmentDto } from './dto/advance-shipment.dto';
 import { CreateShipmentDto } from './dto/create-shipment.dto';
@@ -19,6 +20,7 @@ export class ShipmentsService {
   constructor(private readonly prismaService: PrismaService) {}
 
   async createShipment(tenantContext: ITenantContext, dto: CreateShipmentDto) {
+    await this.prismaService.setTenantContext(tenantContext.tenantId);
     return this.prismaService.shipment.create({
       data: {
         tenantId: tenantContext.tenantId,
@@ -32,6 +34,7 @@ export class ShipmentsService {
   }
 
   async addShippingQuote(tenantContext: ITenantContext, dto: AddShippingQuoteDto) {
+    await this.prismaService.setTenantContext(tenantContext.tenantId);
     return this.prismaService.shippingQuote.create({
       data: {
         tenantId: tenantContext.tenantId,
@@ -47,7 +50,7 @@ export class ShipmentsService {
   }
 
   async selectShippingQuote(tenantContext: ITenantContext, dto: SelectShippingQuoteDto) {
-    return this.prismaService.$transaction(async (transaction) => {
+    return this.prismaService.$transactionWithRLS(tenantContext.tenantId, async (transaction) => {
       const shippingQuote = await transaction.shippingQuote.findFirstOrThrow({
         where: { id: dto.shippingQuoteId, tenantId: tenantContext.tenantId },
         include: { shipment: true },
@@ -80,7 +83,7 @@ export class ShipmentsService {
   }
 
   async advanceShipment(tenantContext: ITenantContext, dto: AdvanceShipmentDto) {
-    return this.prismaService.$transaction(async (transaction) => {
+    return this.prismaService.$transactionWithRLS(tenantContext.tenantId, async (transaction) => {
       const shipment = await transaction.shipment.findFirstOrThrow({
         where: { id: dto.shipmentId, tenantId: tenantContext.tenantId },
       });

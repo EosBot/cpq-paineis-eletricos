@@ -1,4 +1,5 @@
 import { Injectable } from '@nestjs/common';
+import { Prisma } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
 import { type ITenantContext } from '../tenancy/tenant-context';
 
@@ -14,10 +15,11 @@ export class PricingService {
   constructor(private readonly prismaService: PrismaService) {}
 
   async resolvePricingContext(
+    client: Prisma.TransactionClient,
     tenantContext: ITenantContext,
     quoteId: string,
   ): Promise<IResolvedPricingContext> {
-    const quote = await this.prismaService.quote.findFirstOrThrow({
+    const quote = await client.quote.findFirstOrThrow({
       where: {
         id: quoteId,
         tenantId: tenantContext.tenantId,

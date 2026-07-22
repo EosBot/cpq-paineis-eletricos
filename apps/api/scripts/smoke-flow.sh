@@ -9,6 +9,10 @@
 #   - Seed ja executado (pnpm --filter api seed) -> tenant demo-paineis + admin
 #   - jq instalado (extracao de IDs)
 #
+# Observacao: o tenant context e derivado do JWT (login), nao dos headers
+# x-tenant-id/x-user-id (estes sao no-ops neste backend). O script envia os
+# headers por compatibilidade, mas o acesso real usa o token Bearer.
+#
 # Uso:
 #   bash apps/api/scripts/smoke-flow.sh
 #
@@ -57,10 +61,13 @@ if echo "$COMP_RESP" | grep -q "$COMPONENT_ID"; then pass "componente listado"; 
 echo "== 3. QUOTE =="
 QUOTE_BODY=$(jq -n --arg c "$CUSTOMER_ID" --arg n "Q-${RUN_TS}" \
   '{customerAccountId:$c,quoteNumber:$n,title:"Quadro de distribuicao",currencyCode:"BRL"}')
-QUOTE_RESP=$(curl -s "${H_TENANT[@]}" "${H_USER[@]}" "${H_AUTH[@]}" "${H_JSON[@]}" -X POST "$BASE/quotes" -d "$QUOTE_BODY")
+QUOTE_HDRS=$(mktemp)
+QUOTE_RESP=$(curl -s -D "$QUOTE_HDRS" "${H_TENANT[@]}" "${H_USER[@]}" "${H_AUTH[@]}" "${H_JSON[@]}" -X POST "$BASE/quotes" -d "$QUOTE_BODY")
 echo "$QUOTE_RESP"
 QUOTE_ID=$(echo "$QUOTE_RESP" | jid '.id')
 [ -n "$QUOTE_ID" ] && [ "$QUOTE_ID" != "null" ] || fail "quote nao criada"
+# Captura o correlation-id injetado pelo CorrelationIdInterceptor (header de resposta).
+CORR_ID=$(grep -i '^x-correlation-id:' "$QUOTE_HDRS" | awk '{print $2}' | tr -d '\r')
 pass "quote OK ($QUOTE_ID)"
 
 echo "== 4. CONFIGURATION =="
@@ -121,6 +128,32 @@ ADV_BODY=$(jq -n --arg o "$ORDER_ID" '{orderId:$o,toStatus:"IN_PRODUCTION"}')
 ADV_RESP=$(curl -s "${H_TENANT[@]}" "${H_USER[@]}" "${H_AUTH[@]}" "${H_JSON[@]}" -X POST "$BASE/orders/$ORDER_ID/advance" -d "$ADV_BODY")
 echo "$ADV_RESP"
 if echo "$ADV_RESP" | grep -q "IN_PRODUCTION"; then pass "order avancada para IN_PRODUCTION"; else fail "advance falhou: $ADV_RESP"; fi
+
+echo "== 12. AUDIT LOG (correlation-id + registros) =="
+AUDIT_RESP=$(curl -s "${H_AUTH[@]}" "${H_JSON[@]}" "$BASE/audit-logs?entityType=Quote&limit=10")
+echo "$AUDIT_RESP"
+if echo "$AUDIT_RESP" | grep -q "$QUOTE_ID"; then
+  pass "audit log contem entrada para a quote $QUOTE_ID"
+else
+  fail "audit log nao contem a quote criada"
+fi
+if [ -n "$CORR_ID" ] && echo "$AUDIT_RESP" | grep -q "$CORR_ID"; then
+  pass "correlation-id ($CORR_ID) registrado na auditoria"
+else
+  fail "correlation-id nao encontrado na auditoria (CORR_ID=${CORR_ID:-vazio})"
+fi
+
+echo "== 13. CORS (preflight informativo) =="
+PREFLIGHT=$(curl -s -o /dev/null -D - -X OPTIONS "$BASE/quotes" \
+  -H "Origin: http://localhost:5173" \
+  -H "Access-Control-Request-Method: POST" \
+  -H "Access-Control-Request-Headers: authorization,content-type" || true)
+if echo "$PREFLIGHT" | grep -qi "access-control-allow-origin"; then
+  pass "CORS habilitado: preflight retornou allow-origin"
+else
+  echo "[INFO] CORS fail-closed (sem CORS_ORIGIN) ou origem nao permitida — esperado em dev sem frontend."
+  echo "[INFO] Defina CORS_ORIGIN no .env da API para habilitar o compartilhamento com o frontend."
+fi
 
 echo -e "\n========================================="
 echo "CADEIA VERTICAL COMPLETA VALIDADA COM SUCESSO"

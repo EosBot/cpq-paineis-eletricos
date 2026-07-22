@@ -2,6 +2,7 @@ import { Injectable } from '@nestjs/common';
 import { Prisma } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
 import { type ITenantContext } from '../tenancy/tenant-context';
+import { getTenantContextFromStorage } from '../tenancy/tenant-context.storage';
 import { GenerateBomVersionDto } from './dto/generate-bom-version.dto';
 
 interface SnapshotItem {
@@ -17,6 +18,7 @@ export class BomService {
   constructor(private readonly prismaService: PrismaService) {}
 
   async generateBomVersion(tenantContext: ITenantContext, dto: GenerateBomVersionDto) {
+    await this.prismaService.setTenantContext(tenantContext.tenantId);
     const snapshot = await this.prismaService.configurationSnapshot.findFirstOrThrow({
       where: {
         id: dto.configurationSnapshotId,

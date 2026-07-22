@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { BadRequestException, Injectable } from '@nestjs/common';
 import {
   Prisma,
   QuoteStatus,
@@ -9,6 +9,7 @@ import { BomService } from '../bom/bom.service';
 import { PricingService } from '../pricing/pricing.service';
 import { PrismaService } from '../prisma/prisma.service';
 import { type ITenantContext } from '../tenancy/tenant-context';
+import { getTenantContextFromStorage } from '../tenancy/tenant-context.storage';
 import { CreateQuoteDto } from './dto/create-quote.dto';
 import { CustomerApproveQuoteDto } from './dto/customer-approve-quote.dto';
 import { ReopenQuoteDto } from './dto/reopen-quote.dto';
@@ -23,13 +24,14 @@ export class QuotesService {
   ) {}
 
   async createQuote(tenantContext: ITenantContext, dto: CreateQuoteDto) {
+    await this.prismaService.setTenantContext(tenantContext.tenantId);
     return this.prismaService.quote.create({
       data: {
         tenantId: tenantContext.tenantId,
         customerAccountId: dto.customerAccountId,
         primaryContactId: dto.primaryContactId,
         commercialContractId: dto.commercialContractId,
-        createdByUserId: tenantContext.userId ?? dto.createdByUserId,
+        createdByUserId: tenantContext.userId,
         quoteNumber: dto.quoteNumber,
         title: dto.title,
         status: QuoteStatus.DRAFT,
@@ -58,7 +60,7 @@ export class QuotesService {
   }
 
   async calculateQuoteVersion(tenantContext: ITenantContext, quoteId: string) {
-    const quoteVersion = await this.prismaService.$transaction(async (transaction) => {
+    const quoteVersion = await this.prismaService.$transactionWithRLS(tenantContext.tenantId, async (transaction) => {
       const quote = await transaction.quote.findFirstOrThrow({
         where: {
           id: quoteId,
@@ -92,6 +94,7 @@ export class QuotesService {
       }
 
       const pricingContext = await this.pricingService.resolvePricingContext(
+        transaction,
         tenantContext,
         quote.id,
       );
@@ -166,10 +169,20 @@ export class QuotesService {
   }
 
   async sendQuote(tenantContext: ITenantContext, dto: SendQuoteDto) {
+    await this.prismaService.setTenantContext(tenantContext.tenantId);
+    const quote = await this.prismaService.quote.findFirst({
+      where: { id: dto.quoteId, tenantId: tenantContext.tenantId },
+    });
+    if (!quote) {
+      throw new BadRequestException('Quote not found.');
+    }
+    if (quote.status !== QuoteStatus.CALCULATED) {
+      throw new BadRequestException(
+        `Quote can only be sent from CALCULATED status. Current: ${quote.status}`,
+      );
+    }
     return this.prismaService.quote.update({
-      where: {
-        id: dto.quoteId,
-      },
+      where: { id: dto.quoteId },
       data: {
         status: QuoteStatus.SENT,
         sentAt: new Date(),
@@ -182,10 +195,20 @@ export class QuotesService {
     tenantContext: ITenantContext,
     dto: CustomerApproveQuoteDto,
   ) {
+    await this.prismaService.setTenantContext(tenantContext.tenantId);
+    const quote = await this.prismaService.quote.findFirst({
+      where: { id: dto.quoteId, tenantId: tenantContext.tenantId },
+    });
+    if (!quote) {
+      throw new BadRequestException('Quote not found.');
+    }
+    if (quote.status !== QuoteStatus.SENT) {
+      throw new BadRequestException(
+        `Quote can only be approved from SENT status. Current: ${quote.status}`,
+      );
+    }
     return this.prismaService.quote.update({
-      where: {
-        id: dto.quoteId,
-      },
+      where: { id: dto.quoteId },
       data: {
         status: QuoteStatus.CUSTOMER_APPROVED,
         customerApprovedAt: new Date(),
@@ -194,8 +217,8 @@ export class QuotesService {
   }
 
   async reopenQuote(tenantContext: ITenantContext, dto: ReopenQuoteDto) {
-    return this.prismaService.$transaction(async (transaction) => {
-      const quote = await transaction.quote.findFirstOrThrow({
+    return this.prismaService.$transactionWithRLS(tenantContext.tenantId, async (transaction) => {
+      const quote = await transaction.quote.findFirst({
         where: {
           id: dto.quoteId,
           tenantId: tenantContext.tenantId,
@@ -220,10 +243,20 @@ export class QuotesService {
         },
       });
 
+      if (!quote) {
+        throw new BadRequestException('Quote not found.');
+      }
+
+      if (quote.status !== QuoteStatus.EXPIRED) {
+        throw new BadRequestException(
+          `Only EXPIRED quotes can be reopened. Current: ${quote.status}`,
+        );
+      }
+
       const configurationSnapshot = quote.configuration?.snapshots[0];
 
       if (!configurationSnapshot) {
-        throw new Error('Configuration snapshot is required to reopen a quote.');
+        throw new BadRequestException('Configuration snapshot is required to reopen a quote.');
       }
 
       const versionNumber = (quote.versions[0]?.versionNumber ?? 0) + 1;

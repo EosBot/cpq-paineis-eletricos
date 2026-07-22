@@ -1,8 +1,9 @@
-import { Body, Controller, Get, Headers, Post, UseGuards } from '@nestjs/common';
+import { Body, Controller, Get, Post, UseGuards } from '@nestjs/common';
 import { AuthGuard } from '@nestjs/passport';
 import { Roles } from '../auth/roles.decorator';
 import { RolesGuard } from '../auth/roles.guard';
-import { createTenantContext } from '../tenancy/tenant-context';
+import { TenantContext } from '../tenancy/tenant-context.decorator';
+import { type ITenantContext } from '../tenancy/tenant-context';
 import { ConfigurationsService } from './configurations.service';
 import { CreateConfigurationDto } from './dto/create-configuration.dto';
 import { SubmitConfigurationForReviewDto } from './dto/submit-configuration-for-review.dto';
@@ -14,38 +15,22 @@ export class ConfigurationsController {
 
   @Post()
   @Roles('admin', 'engineer')
-  create(
-    @Headers('x-tenant-id') tenantId: string,
-    @Headers('x-user-id') userId: string,
-    @Body() dto: CreateConfigurationDto,
-  ) {
-    return this.configurationsService.createConfiguration(
-      createTenantContext(tenantId, userId),
-      dto,
-    );
+  create(@TenantContext() tenantContext: ITenantContext, @Body() dto: CreateConfigurationDto) {
+    return this.configurationsService.createConfiguration(tenantContext, dto);
   }
 
   @Get()
   @Roles('admin', 'engineer', 'sales')
-  list(
-    @Headers('x-tenant-id') tenantId: string,
-    @Headers('x-user-id') userId: string,
-  ) {
-    return this.configurationsService.listConfigurations(
-      createTenantContext(tenantId, userId),
-    );
+  list(@TenantContext() tenantContext: ITenantContext) {
+    return this.configurationsService.listConfigurations(tenantContext);
   }
 
   @Post('submit-for-review')
   @Roles('admin', 'engineer')
   submitForReview(
-    @Headers('x-tenant-id') tenantId: string,
-    @Headers('x-user-id') userId: string,
+    @TenantContext() tenantContext: ITenantContext,
     @Body() dto: SubmitConfigurationForReviewDto,
   ) {
-    return this.configurationsService.submitForInternalReview(
-      createTenantContext(tenantId, userId),
-      dto,
-    );
+    return this.configurationsService.submitForInternalReview(tenantContext, dto);
   }
 }

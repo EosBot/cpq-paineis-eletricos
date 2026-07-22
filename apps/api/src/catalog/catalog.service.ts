@@ -2,6 +2,7 @@ import { Injectable } from '@nestjs/common';
 import { Prisma, type AttributeValueType } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
 import { type ITenantContext } from '../tenancy/tenant-context';
+import { getTenantContextFromStorage } from '../tenancy/tenant-context.storage';
 import { CreateComponentCategoryDto } from './dto/create-component-category.dto';
 import { CreateComponentDto } from './dto/create-component.dto';
 
@@ -13,6 +14,7 @@ export class CatalogService {
     tenantContext: ITenantContext,
     dto: CreateComponentCategoryDto,
   ) {
+    await this.prismaService.setTenantContext(tenantContext.tenantId);
     return this.prismaService.componentCategory.create({
       data: {
         tenantId: tenantContext.tenantId,
@@ -56,6 +58,7 @@ export class CatalogService {
   }
 
   async createComponent(tenantContext: ITenantContext, dto: CreateComponentDto) {
+    await this.prismaService.setTenantContext(tenantContext.tenantId);
     const componentCategory = await this.prismaService.componentCategory.findFirstOrThrow({
       where: {
         id: dto.componentCategoryId,

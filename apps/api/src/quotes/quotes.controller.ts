@@ -1,8 +1,9 @@
-import { Body, Controller, Get, Headers, Param, Post, UseGuards } from '@nestjs/common';
+import { Body, Controller, Get, Param, Post, UseGuards } from '@nestjs/common';
 import { AuthGuard } from '@nestjs/passport';
 import { Roles } from '../auth/roles.decorator';
 import { RolesGuard } from '../auth/roles.guard';
-import { createTenantContext } from '../tenancy/tenant-context';
+import { TenantContext } from '../tenancy/tenant-context.decorator';
+import { type ITenantContext } from '../tenancy/tenant-context';
 import { CreateQuoteDto } from './dto/create-quote.dto';
 import { CustomerApproveQuoteDto } from './dto/customer-approve-quote.dto';
 import { ReopenQuoteDto } from './dto/reopen-quote.dto';
@@ -16,66 +17,40 @@ export class QuotesController {
 
   @Post()
   @Roles('admin', 'sales')
-  create(
-    @Headers('x-tenant-id') tenantId: string,
-    @Headers('x-user-id') userId: string,
-    @Body() dto: CreateQuoteDto,
-  ) {
-    return this.quotesService.createQuote(createTenantContext(tenantId, userId), dto);
+  create(@TenantContext() tenantContext: ITenantContext, @Body() dto: CreateQuoteDto) {
+    return this.quotesService.createQuote(tenantContext, dto);
   }
 
   @Get()
   @Roles('admin', 'engineer', 'sales')
-  list(
-    @Headers('x-tenant-id') tenantId: string,
-    @Headers('x-user-id') userId: string,
-  ) {
-    return this.quotesService.listQuotes(createTenantContext(tenantId, userId));
+  list(@TenantContext() tenantContext: ITenantContext) {
+    return this.quotesService.listQuotes(tenantContext);
   }
 
   @Post(':quoteId/calculate')
   @Roles('admin', 'sales')
-  calculate(
-    @Headers('x-tenant-id') tenantId: string,
-    @Headers('x-user-id') userId: string,
-    @Param('quoteId') quoteId: string,
-  ) {
-    return this.quotesService.calculateQuoteVersion(
-      createTenantContext(tenantId, userId),
-      quoteId,
-    );
+  calculate(@TenantContext() tenantContext: ITenantContext, @Param('quoteId') quoteId: string) {
+    return this.quotesService.calculateQuoteVersion(tenantContext, quoteId);
   }
 
   @Post('send')
   @Roles('admin', 'sales')
-  send(
-    @Headers('x-tenant-id') tenantId: string,
-    @Headers('x-user-id') userId: string,
-    @Body() dto: SendQuoteDto,
-  ) {
-    return this.quotesService.sendQuote(createTenantContext(tenantId, userId), dto);
+  send(@TenantContext() tenantContext: ITenantContext, @Body() dto: SendQuoteDto) {
+    return this.quotesService.sendQuote(tenantContext, dto);
   }
 
   @Post('customer-approve')
   @Roles('admin', 'sales')
   customerApprove(
-    @Headers('x-tenant-id') tenantId: string,
-    @Headers('x-user-id') userId: string,
+    @TenantContext() tenantContext: ITenantContext,
     @Body() dto: CustomerApproveQuoteDto,
   ) {
-    return this.quotesService.customerApproveQuote(
-      createTenantContext(tenantId, userId),
-      dto,
-    );
+    return this.quotesService.customerApproveQuote(tenantContext, dto);
   }
 
   @Post('reopen')
   @Roles('admin')
-  reopen(
-    @Headers('x-tenant-id') tenantId: string,
-    @Headers('x-user-id') userId: string,
-    @Body() dto: ReopenQuoteDto,
-  ) {
-    return this.quotesService.reopenQuote(createTenantContext(tenantId, userId), dto);
+  reopen(@TenantContext() tenantContext: ITenantContext, @Body() dto: ReopenQuoteDto) {
+    return this.quotesService.reopenQuote(tenantContext, dto);
   }
 }

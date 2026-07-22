@@ -6,6 +6,7 @@ import {
 } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
 import { type ITenantContext } from '../tenancy/tenant-context';
+import { getTenantContextFromStorage } from '../tenancy/tenant-context.storage';
 import { ApproveRuleVersionDto } from './dto/approve-rule-version.dto';
 import { CreateRuleDto } from './dto/create-rule.dto';
 import { CreateRuleVersionDto } from './dto/create-rule-version.dto';
@@ -15,13 +16,14 @@ export class RulesService {
   constructor(private readonly prismaService: PrismaService) {}
 
   async createRule(tenantContext: ITenantContext, dto: CreateRuleDto) {
+    await this.prismaService.setTenantContext(tenantContext.tenantId);
     return this.prismaService.rule.create({
       data: {
         tenantId: tenantContext.tenantId,
         name: dto.name,
         code: dto.code,
         status: RuleStatus.DRAFT,
-        createdByUserId: tenantContext.userId ?? dto.createdByUserId,
+        createdByUserId: tenantContext.userId,
       },
     });
   }
@@ -30,6 +32,7 @@ export class RulesService {
     tenantContext: ITenantContext,
     dto: CreateRuleVersionDto,
   ) {
+    await this.prismaService.setTenantContext(tenantContext.tenantId);
     const rule = await this.prismaService.rule.findFirstOrThrow({
       where: {
         id: dto.ruleId,
@@ -62,9 +65,9 @@ export class RulesService {
     tenantContext: ITenantContext,
     dto: ApproveRuleVersionDto,
   ) {
-    const approverUserId = tenantContext.userId ?? dto.approvedByUserId;
+    const approverUserId = tenantContext.userId;
 
-    return this.prismaService.$transaction(async (transaction) => {
+    return this.prismaService.$transactionWithRLS(tenantContext.tenantId, async (transaction) => {
       const version = await transaction.ruleVersion.findFirstOrThrow({
         where: {
           id: dto.ruleVersionId,

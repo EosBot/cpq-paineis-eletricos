@@ -1,4 +1,4 @@
-import { IsOptional, IsString, MaxLength } from 'class-validator';
+import { IsString, MaxLength } from 'class-validator';
 
 export class CreateRuleDto {
   @IsString()
@@ -8,8 +8,4 @@ export class CreateRuleDto {
   @IsString()
   @MaxLength(120)
   code!: string;
-
-  @IsOptional()
-  @IsString()
-  createdByUserId?: string;
 }

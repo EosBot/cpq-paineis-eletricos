@@ -1,5 +1,10 @@
 import { assertTenantContext, type ITenantContext } from './tenant-context';
 import { isTenantScopedModel } from './tenant-scope-registry';
+import type { PrismaClient } from '@prisma/client';
+
+type PrismaMiddlewareParams = Parameters<
+  Parameters<PrismaClient['$use']>[0]
+>[0];
 
 type PrismaOperation =
   | 'findUnique'
@@ -22,6 +27,14 @@ export interface IPrismaQueryParams {
   model?: string;
   operation: PrismaOperation;
   args?: Record<string, unknown>;
+}
+
+function toQueryParams(params: PrismaMiddlewareParams): IPrismaQueryParams {
+  return {
+    model: params.model,
+    operation: params.action as PrismaOperation,
+    args: params.args as Record<string, unknown> | undefined,
+  };
 }
 
 interface IWhereInput {
@@ -50,6 +63,28 @@ function withTenantWhere(
   };
 }
 
+// Para WhereUniqueInput (findUnique/OrThrow, update/delete único, upsert) a
+// chave (id ou unique composto) deve ficar no NÍVEL SUPERIOR. O wrapper AND
+// de withTenantWhere é INVÁLIDO para esses inputs. Mesclamos tenantId no
+// nível superior, preservando o isolamento multi-tenant (fail-closed).
+function withTenantUniqueWhere(
+  where: Record<string, unknown> | undefined,
+  tenantId: string,
+): Record<string, unknown> {
+  if (!where) {
+    return { tenantId };
+  }
+
+  if (where.tenantId !== undefined) {
+    return where;
+  }
+
+  return {
+    ...where,
+    tenantId,
+  };
+}
+
 function withTenantData(
   data: unknown,
   tenantId: string,
@@ -73,29 +108,34 @@ function withTenantData(
 }
 
 export function applyTenantScope(
-  params: IPrismaQueryParams,
+  params: PrismaMiddlewareParams,
   tenantContext: ITenantContext | null | undefined,
-): IPrismaQueryParams {
-  const tenant = assertTenantContext(tenantContext);
+): PrismaMiddlewareParams {
+  const query = toQueryParams(params);
 
-  if (!params.model || !isTenantScopedModel(params.model)) {
+  // Modelos não tenant-scoped (ex.: User — a camada de identidade/diretório)
+  // são acessíveis sem contexto de tenant. O isolamento multi-tenant é
+  // aplicado SOMENTE a modelos scoped, que EXIGEM contexto de tenant
+  // (fail-closed). Isso também permite que fluxos de autenticação não
+  // autenticados (login/refresh) leiam o registro de User.
+  if (!query.model || !isTenantScopedModel(query.model)) {
     return params;
   }
 
-  const args = params.args ?? {};
+  const tenant = assertTenantContext(tenantContext);
 
-  switch (params.operation) {
-    case 'findUnique':
-    case 'findUniqueOrThrow':
+  const args = query.args ?? {};
+
+  switch (query.operation) {
+    // Operações com WhereInput: o wrapper AND é válido e preserva o
+    // isolamento multi-tenant (fail-closed).
     case 'findFirst':
     case 'findFirstOrThrow':
     case 'findMany':
     case 'count':
     case 'aggregate':
     case 'groupBy':
-    case 'update':
     case 'updateMany':
-    case 'delete':
     case 'deleteMany':
       return {
         ...params,
@@ -105,6 +145,33 @@ export function applyTenantScope(
             isObject(args.where) ? args.where : undefined,
             tenant.tenantId,
           ),
+        },
+      };
+
+    // Operações com WhereUniqueInput (findUnique/OrThrow, update/delete
+    // único, upsert): a chave (id ou unique composto) deve ficar no NÍVEL
+    // SUPERIOR. O wrapper AND de withTenantWhere é INVÁLIDO para esses
+    // inputs e quebra a chamada. Mesclamos tenantId no nível superior,
+    // preservando o isolamento (fail-closed).
+    case 'findUnique':
+    case 'findUniqueOrThrow':
+    case 'update':
+    case 'delete':
+    case 'upsert':
+      return {
+        ...params,
+        args: {
+          ...args,
+          where: withTenantUniqueWhere(
+            isObject(args.where) ? args.where : undefined,
+            tenant.tenantId,
+          ),
+          ...(query.operation === 'upsert'
+            ? {
+                create: withTenantData(args.create, tenant.tenantId),
+                update: withTenantData(args.update, tenant.tenantId),
+              }
+            : {}),
         },
       };
 
@@ -123,20 +190,6 @@ export function applyTenantScope(
         args: {
           ...args,
           data: withTenantData(args.data, tenant.tenantId),
-        },
-      };
-
-    case 'upsert':
-      return {
-        ...params,
-        args: {
-          ...args,
-          where: withTenantWhere(
-            isObject(args.where) ? args.where : undefined,
-            tenant.tenantId,
-          ),
-          create: withTenantData(args.create, tenant.tenantId),
-          update: withTenantData(args.update, tenant.tenantId),
         },
       };
 

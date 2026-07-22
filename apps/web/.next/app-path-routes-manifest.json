@@ -1,0 +1,8 @@
+{
+  "/_not-found/page": "/_not-found",
+  "/api/auth/[...nextauth]/route": "/api/auth/[...nextauth]",
+  "/admin/page": "/admin",
+  "/configure/[configurationId]/page": "/configure/[configurationId]",
+  "/login/page": "/login",
+  "/page": "/"
+}

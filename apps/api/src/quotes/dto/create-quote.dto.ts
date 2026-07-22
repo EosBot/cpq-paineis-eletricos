@@ -12,10 +12,6 @@ export class CreateQuoteDto {
   @IsString()
   commercialContractId?: string;
 
-  @IsOptional()
-  @IsString()
-  createdByUserId?: string;
-
   @IsString()
   @MaxLength(120)
   quoteNumber!: string;

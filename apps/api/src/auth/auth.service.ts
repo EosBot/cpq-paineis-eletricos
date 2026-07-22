@@ -28,11 +28,14 @@ export class AuthService {
       include: {
         memberships: {
           where: {
-            tenantId: loginDto.tenantId,
+            ...(loginDto.tenantId ? { tenantId: loginDto.tenantId } : {}),
             status: 'ACTIVE',
           },
           include: {
             role: true,
+          },
+          orderBy: {
+            createdAt: 'asc',
           },
           take: 1,
         },
@@ -54,8 +57,8 @@ export class AuthService {
 
     const membership = user.memberships[0];
 
-    if (!membership) {
-      throw new UnauthorizedException('Membership not found for tenant.');
+    if (!membership || membership.status !== 'ACTIVE') {
+      throw new UnauthorizedException('Invalid credentials.');
     }
 
     const permissions = this.extractPermissions(membership.role.permissions);
@@ -71,10 +74,7 @@ export class AuthService {
   }
 
   async refresh(refreshTokenDto: RefreshTokenDto) {
-    const refreshSecret = this.configService.get<string>(
-      'JWT_REFRESH_SECRET',
-      'change-me-refresh',
-    );
+    const refreshSecret = this.getRefreshSecret();
 
     let payload: IAuthJwtPayload;
 
@@ -89,14 +89,41 @@ export class AuthService {
       throw new UnauthorizedException('Invalid refresh token.');
     }
 
-    return this.issueTokens(payload);
+    const membership = await this.prismaService.membership.findFirst({
+      where: {
+        id: payload.membershipId,
+        tenantId: payload.tenantId,
+      },
+      include: { role: true },
+    });
+
+    if (!membership || membership.status !== 'ACTIVE') {
+      throw new UnauthorizedException('Invalid refresh token.');
+    }
+
+    const freshPayload: IAuthJwtPayload = {
+      sub: payload.sub,
+      tenantId: membership.tenantId,
+      membershipId: membership.id,
+      roleCode: membership.role.code,
+      permissions: this.extractPermissions(membership.role.permissions),
+    };
+
+    return this.issueTokens(freshPayload);
+  }
+
+  private getRefreshSecret(): string {
+    const secret = this.configService.get<string>('JWT_REFRESH_SECRET');
+    if (!secret) {
+      throw new Error(
+        'JWT_REFRESH_SECRET is required and must be provided via environment configuration.',
+      );
+    }
+    return secret;
   }
 
   private async issueTokens(payload: IAuthJwtPayload) {
-    const refreshSecret = this.configService.get<string>(
-      'JWT_REFRESH_SECRET',
-      'change-me-refresh',
-    );
+    const refreshSecret = this.getRefreshSecret();
     const refreshExpiresIn = this.configService.get<string>(
       'JWT_REFRESH_EXPIRES_IN',
       '7d',
