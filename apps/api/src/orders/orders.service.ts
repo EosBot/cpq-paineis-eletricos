@@ -7,13 +7,7 @@ import { getTenantContextFromStorage } from '../tenancy/tenant-context.storage';
 import { AdvanceOrderDto } from './dto/advance-order.dto';
 import { ConvertQuoteToOrderDto } from './dto/convert-quote-to-order.dto';
 
-const ORDER_FLOW: OrderStatus[] = [
-  OrderStatus.CONFIRMED,
-  OrderStatus.IN_PRODUCTION,
-  OrderStatus.READY_TO_SHIP,
-  OrderStatus.SHIPPED,
-  OrderStatus.DELIVERED,
-];
+const ORDER_FLOW = ['CONFIRMED', 'IN_PRODUCTION', 'READY_TO_SHIP', 'SHIPPED', 'DELIVERED'] as const;
 
 @Injectable()
 export class OrdersService {
@@ -100,7 +94,7 @@ export class OrdersService {
       });
 
       const currentIndex = ORDER_FLOW.indexOf(order.status);
-      const targetIndex = ORDER_FLOW.indexOf(dto.toStatus);
+      const targetIndex = ORDER_FLOW.indexOf(dto.toStatus as typeof ORDER_FLOW[number]);
 
       if (targetIndex !== currentIndex + 1) {
         throw new BadRequestException(
@@ -109,12 +103,12 @@ export class OrdersService {
       }
 
       const now = new Date();
-      const data: Prisma.OrderUpdateInput = { status: dto.toStatus };
+      const data: Prisma.OrderUpdateInput = { status: dto.toStatus as OrderStatus };
       switch (dto.toStatus) {
-        case OrderStatus.IN_PRODUCTION:
+        case 'IN_PRODUCTION':
           data.producedAt = now;
           break;
-        case OrderStatus.READY_TO_SHIP:
+        case 'READY_TO_SHIP':
           data.readyToShipAt = now;
           break;
         case OrderStatus.SHIPPED:

@@ -129,7 +129,7 @@ export class InventoryService {
           tenantId,
           productId: dto.productId,
           locationId: dto.locationId,
-          type: dto.type,
+          type: dto.type as StockMovementType,
           quantity,
           unitCost: dto.unitCost ? new Prisma.Decimal(dto.unitCost) : null,
           referenceType: dto.referenceType,

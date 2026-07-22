@@ -14,7 +14,7 @@ import {
   IsArray,
   IsBoolean,
   IsDecimal,
-  IsEnum,
+  IsIn,
   IsISO8601,
   IsOptional,
   IsString,
@@ -28,6 +28,8 @@ import { TenantContext } from '../../../tenancy/tenant-context.decorator';
 import { type ITenantContext } from '../../../tenancy/tenant-context';
 import { FinancialService } from './financial.service';
 
+const ACCOUNT_TYPES = ['ASSET', 'LIABILITY', 'EQUITY', 'REVENUE', 'EXPENSE'] as const;
+
 class CreateAccountDto {
   @IsString()
   @MaxLength(40)
@@ -37,8 +39,8 @@ class CreateAccountDto {
   @MaxLength(160)
   name!: string;
 
-  @IsEnum(AccountType)
-  type!: AccountType;
+  @IsIn(ACCOUNT_TYPES)
+  type!: string;
 
   @IsOptional()
   @IsString()
@@ -60,7 +62,7 @@ class CreateTransactionDto {
   @IsDecimal({ decimal_digits: '0,4' })
   amount!: string;
 
-  @IsEnum(['CREDIT', 'DEBIT'])
+  @IsIn(['CREDIT', 'DEBIT'])
   direction!: 'CREDIT' | 'DEBIT';
 
   @IsOptional()
@@ -139,7 +141,7 @@ class BankTransactionItemDto {
   @IsDecimal({ decimal_digits: '0,4' })
   amount!: string;
 
-  @IsEnum(['CREDIT', 'DEBIT'])
+  @IsIn(['CREDIT', 'DEBIT'])
   direction!: 'CREDIT' | 'DEBIT';
 
   @IsOptional()

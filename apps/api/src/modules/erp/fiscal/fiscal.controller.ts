@@ -14,7 +14,7 @@ import {
   ArrayMinSize,
   IsArray,
   IsEmail,
-  IsEnum,
+  IsIn,
   IsInt,
   IsObject,
   IsOptional,
@@ -29,13 +29,15 @@ import { TenantContext } from '../../../tenancy/tenant-context.decorator';
 import { type ITenantContext } from '../../../tenancy/tenant-context';
 import { FiscalService } from './fiscal.service';
 
+const FISCAL_DOCUMENT_TYPES = ['NFE', 'NFCE', 'NFSE', 'INVOICE'] as const;
+
 class CreateSeriesDto {
   @IsString()
   @MaxLength(20)
   code!: string;
 
-  @IsEnum(FiscalDocumentType)
-  documentType!: FiscalDocumentType;
+  @IsIn(FISCAL_DOCUMENT_TYPES)
+  documentType!: string;
 
   @IsOptional()
   @IsInt()
@@ -114,8 +116,8 @@ class FiscalDocumentItemDto {
 }
 
 class CreateFiscalDocumentDto {
-  @IsEnum(FiscalDocumentType)
-  documentType!: FiscalDocumentType;
+  @IsIn(FISCAL_DOCUMENT_TYPES)
+  documentType!: string;
 
   @IsOptional()
   @IsString()

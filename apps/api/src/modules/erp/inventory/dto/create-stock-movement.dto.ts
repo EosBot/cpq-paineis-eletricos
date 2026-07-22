@@ -1,11 +1,12 @@
 import {
   IsDecimal,
-  IsEnum,
+  IsIn,
   IsOptional,
   IsString,
   MaxLength,
 } from 'class-validator';
-import { StockMovementType } from '@prisma/client';
+
+const STOCK_MOVEMENT_TYPES = ['ENTRADA', 'SAIDA', 'AJUSTE', 'TRANSFERENCIA'] as const;
 
 export class CreateStockMovementDto {
   @IsString()
@@ -14,8 +15,8 @@ export class CreateStockMovementDto {
   @IsString()
   locationId!: string;
 
-  @IsEnum(StockMovementType)
-  type!: StockMovementType;
+  @IsIn(STOCK_MOVEMENT_TYPES)
+  type!: string;
 
   @IsDecimal({ decimal_digits: '0,4' })
   quantity!: string;

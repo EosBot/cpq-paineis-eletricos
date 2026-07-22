@@ -13,7 +13,7 @@ export class FiscalService {
 
   async createSeries(tenantId: string, data: {
     code: string;
-    documentType: FiscalDocumentType;
+    documentType: string;
     nextNumber?: number;
     environment?: string;
   }) {
@@ -28,7 +28,7 @@ export class FiscalService {
       data: {
         tenantId,
         code: data.code,
-        documentType: data.documentType,
+        documentType: data.documentType as FiscalDocumentType,
         nextNumber: data.nextNumber ?? 1,
         environment: data.environment ?? '2',
       },
@@ -46,7 +46,7 @@ export class FiscalService {
   }
 
   async createDocument(tenantId: string, data: {
-    documentType: FiscalDocumentType;
+    documentType: string;
     seriesId?: string;
     customerId?: string;
     customerName?: string;
@@ -78,7 +78,7 @@ export class FiscalService {
           where: { id: data.seriesId, tenantId },
         })
       : await this.prisma.fiscalSeries.findFirst({
-          where: { tenantId, documentType: data.documentType },
+          where: { tenantId, documentType: data.documentType as FiscalDocumentType },
           orderBy: { createdAt: 'asc' },
         });
 
@@ -87,7 +87,7 @@ export class FiscalService {
     }
 
     const documentNumber = series.nextNumber;
-    const chaveAcesso = this.generateChaveAcesso(tenantId, data.documentType, documentNumber);
+    const chaveAcesso = this.generateChaveAcesso(tenantId, data.documentType as FiscalDocumentType, documentNumber);
 
     let totalAmount = new Prisma.Decimal(0);
     let taxAmount = new Prisma.Decimal(0);
@@ -159,7 +159,7 @@ export class FiscalService {
         data: {
           tenantId,
           seriesId: series.id,
-          documentType: data.documentType,
+          documentType: data.documentType as FiscalDocumentType,
           status: FiscalDocumentStatus.RASCUNHO,
           seriesCode: series.code,
           documentNumber,

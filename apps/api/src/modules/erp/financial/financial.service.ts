@@ -13,7 +13,7 @@ export class FinancialService {
   async createAccount(tenantId: string, data: {
     code: string;
     name: string;
-    type: AccountType;
+    type: string;
     parentAccountId?: string;
     isAnalytical?: boolean;
   }) {
@@ -29,7 +29,7 @@ export class FinancialService {
         tenantId,
         code: data.code,
         name: data.name,
-        type: data.type,
+        type: data.type as AccountType,
         parentAccountId: data.parentAccountId,
         level: 1,
         isAnalytical: data.isAnalytical ?? true,

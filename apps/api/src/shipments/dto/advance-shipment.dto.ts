@@ -1,10 +1,11 @@
-import { IsEnum, IsString } from 'class-validator';
-import { ShipmentStatus } from '@prisma/client';
+import { IsIn, IsString } from 'class-validator';
+
+const SHIPMENT_STATUSES = ['PENDING', 'LABEL_CREATED', 'IN_TRANSIT', 'DELIVERED', 'EXCEPTION'] as const;
 
 export class AdvanceShipmentDto {
   @IsString()
   shipmentId!: string;
 
-  @IsEnum(ShipmentStatus)
-  toStatus!: ShipmentStatus;
+  @IsIn(SHIPMENT_STATUSES)
+  toStatus!: string;
 }

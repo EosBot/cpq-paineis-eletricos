@@ -8,12 +8,7 @@ import { AdvanceShipmentDto } from './dto/advance-shipment.dto';
 import { CreateShipmentDto } from './dto/create-shipment.dto';
 import { SelectShippingQuoteDto } from './dto/select-shipping-quote.dto';
 
-const SHIPMENT_FLOW: ShipmentStatus[] = [
-  ShipmentStatus.PENDING,
-  ShipmentStatus.LABEL_CREATED,
-  ShipmentStatus.IN_TRANSIT,
-  ShipmentStatus.DELIVERED,
-];
+const SHIPMENT_FLOW = ['PENDING', 'LABEL_CREATED', 'IN_TRANSIT', 'DELIVERED'] as const;
 
 @Injectable()
 export class ShipmentsService {
@@ -27,7 +22,7 @@ export class ShipmentsService {
         orderId: dto.orderId,
         recipientName: dto.recipientName ?? null,
         shippingAddress: (dto.shippingAddress ?? Prisma.JsonNull) as Prisma.InputJsonValue,
-        status: ShipmentStatus.PENDING,
+        status: 'PENDING' as ShipmentStatus,
       },
       include: { shippingQuotes: true },
     });
@@ -89,18 +84,18 @@ export class ShipmentsService {
       });
 
       const allowed = this.nextShipmentStatuses(shipment.status);
-      if (!allowed.includes(dto.toStatus)) {
+      if (!allowed.includes(dto.toStatus as ShipmentStatus)) {
         throw new BadRequestException(
           `Shipment cannot move from ${shipment.status} to ${dto.toStatus}.`,
         );
       }
 
       const now = new Date();
-      const data: Prisma.ShipmentUpdateInput = { status: dto.toStatus };
-      if (dto.toStatus === ShipmentStatus.IN_TRANSIT) {
+      const data: Prisma.ShipmentUpdateInput = { status: dto.toStatus as ShipmentStatus };
+      if (dto.toStatus === 'IN_TRANSIT') {
         data.shippedAt = now;
       }
-      if (dto.toStatus === ShipmentStatus.DELIVERED) {
+      if (dto.toStatus === 'DELIVERED') {
         data.deliveredAt = now;
       }
 
@@ -128,13 +123,13 @@ export class ShipmentsService {
   }
 
   private nextShipmentStatuses(current: ShipmentStatus): ShipmentStatus[] {
-    const index = SHIPMENT_FLOW.indexOf(current);
+    const index = SHIPMENT_FLOW.indexOf(current as typeof SHIPMENT_FLOW[number]);
     const next: ShipmentStatus[] = [];
     if (index >= 0 && index < SHIPMENT_FLOW.length - 1) {
-      next.push(SHIPMENT_FLOW[index + 1]);
+      next.push(SHIPMENT_FLOW[index + 1] as ShipmentStatus);
     }
-    if (current === ShipmentStatus.LABEL_CREATED || current === ShipmentStatus.IN_TRANSIT) {
-      next.push(ShipmentStatus.EXCEPTION);
+    if (current === 'LABEL_CREATED' || current === 'IN_TRANSIT') {
+      next.push('EXCEPTION' as ShipmentStatus);
     }
     return next;
   }

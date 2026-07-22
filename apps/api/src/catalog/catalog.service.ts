@@ -26,7 +26,7 @@ export class CatalogService {
             tenantId: tenantContext.tenantId,
             name: template.name,
             code: template.code,
-            valueType: template.valueType,
+            valueType: template.valueType as AttributeValueType,
             isRequired: template.isRequired,
             unit: template.unit,
             sortOrder: template.sortOrder ?? index,

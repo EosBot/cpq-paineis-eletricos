@@ -1,7 +1,7 @@
 import {
   IsArray,
   IsBoolean,
-  IsEnum,
+  IsIn,
   IsInt,
   IsOptional,
   IsString,
@@ -10,7 +10,8 @@ import {
   ValidateNested,
 } from 'class-validator';
 import { Type } from 'class-transformer';
-import { AttributeValueType } from '@prisma/client';
+
+const ATTRIBUTE_VALUE_TYPES = ['TEXT', 'INTEGER', 'DECIMAL', 'BOOLEAN', 'DATE'] as const;
 
 class CreateComponentAttributeTemplateDto {
   @IsString()
@@ -21,8 +22,8 @@ class CreateComponentAttributeTemplateDto {
   @MaxLength(120)
   code!: string;
 
-  @IsEnum(AttributeValueType)
-  valueType!: AttributeValueType;
+  @IsIn(ATTRIBUTE_VALUE_TYPES)
+  valueType!: string;
 
   @IsBoolean()
   isRequired!: boolean;
