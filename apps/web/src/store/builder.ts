@@ -86,6 +86,7 @@ export interface BuilderState {
   currentStep: StepId;
   projectId: string | null;
   configurationId: string | null;
+  productId: string | null;
   project: ProjectSpec;
   enclosure: EnclosureSpec | null;
   rails: DINRail[];
@@ -115,6 +116,7 @@ export interface BuilderActions {
   nextStep: () => void;
   prevStep: () => void;
   setProject: (project: Partial<ProjectSpec>) => void;
+  setProductId: (id: string) => void;
   setEnclosure: (enclosure: EnclosureSpec) => void;
   addRail: (rail: DINRail) => void;
   removeRail: (id: string) => void;
@@ -152,6 +154,7 @@ export const useBuilderStore = create<BuilderState & BuilderActions>((set, get) 
   currentStep: 'PROJECT',
   projectId: null,
   configurationId: null,
+  productId: null,
   project: initialProject,
   enclosure: null,
   rails: [],
@@ -217,6 +220,7 @@ export const useBuilderStore = create<BuilderState & BuilderActions>((set, get) 
   selectRail: (id) => set({ selectedRailId: id }),
   selectComponent: (id) => set({ selectedComponentId: id }),
   setConfigurationId: (id) => set({ configurationId: id }),
+  setProductId: (id) => set({ productId: id }),
   setCatalog: (catalog) => set({ catalog }),
   setCatalogCategories: (categories) => set({ catalogCategories: categories }),
   setRegions: (regions) => set({ regions }),
@@ -228,6 +232,7 @@ export const useBuilderStore = create<BuilderState & BuilderActions>((set, get) 
       currentStep: 'PROJECT',
       projectId: null,
       configurationId: null,
+      productId: null,
       project: initialProject,
       enclosure: null,
       rails: [],

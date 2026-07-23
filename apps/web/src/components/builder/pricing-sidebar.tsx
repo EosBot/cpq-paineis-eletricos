@@ -1,20 +1,48 @@
 'use client';
 
+import { useState } from 'react';
+import { useRouter } from 'next/navigation';
 import { motion } from 'framer-motion';
 import { useBuilderStore } from '@/store/builder';
+import { cartService } from '@/lib/api/services/storefront.service';
 
 export function PricingSidebar() {
-  const { placements, pricing, nextStep, currentStep } = useBuilderStore();
+  const router = useRouter();
+  const { placements, pricing, nextStep, currentStep, productId, project, enclosure, rails, circuits } = useBuilderStore();
+  const [isAdding, setIsAdding] = useState(false);
+
+  const handleAddToCart = async () => {
+    if (!productId || isAdding) return;
+    setIsAdding(true);
+    try {
+      const configurationData = {
+        project,
+        enclosure,
+        rails,
+        circuits,
+        placements,
+        pricing,
+      };
+      await cartService.addItem({
+        productId,
+        quantity: 1,
+        configurationData,
+      });
+      router.push('/cart');
+    } catch (err) {
+      console.error('Failed to add to cart:', err);
+    } finally {
+      setIsAdding(false);
+    }
+  };
 
   return (
     <aside className="flex w-80 shrink-0 flex-col border-l border-white/5 bg-[#0d0d14]">
-      {/* Live Preview Header */}
       <div className="border-b border-white/5 p-4">
         <h3 className="text-sm font-semibold text-white/90">Resumo em Tempo Real</h3>
         <p className="mt-1 text-xs text-white/40">{placements.length} componentes</p>
       </div>
 
-      {/* Component List */}
       <div className="flex-1 overflow-y-auto p-4">
         <div className="space-y-2">
           {placements.length === 0 ? (
@@ -45,7 +73,6 @@ export function PricingSidebar() {
         </div>
       </div>
 
-      {/* Pricing Footer */}
       {pricing && (
         <div className="border-t border-white/5 p-4 space-y-3">
           <div className="space-y-1">
@@ -80,9 +107,11 @@ export function PricingSidebar() {
             <motion.button
               whileHover={{ scale: 1.02 }}
               whileTap={{ scale: 0.98 }}
-              className="w-full rounded-lg bg-gradient-to-r from-blue-500 to-cyan-400 py-2.5 text-sm font-semibold text-white shadow-lg shadow-blue-500/20 transition-all"
+              onClick={handleAddToCart}
+              disabled={isAdding || !productId}
+              className="w-full rounded-lg bg-gradient-to-r from-blue-500 to-cyan-400 py-2.5 text-sm font-semibold text-white shadow-lg shadow-blue-500/20 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
             >
-              Adicionar ao Carrinho
+              {isAdding ? 'Adicionando...' : 'Adicionar ao Carrinho'}
             </motion.button>
           )}
         </div>

@@ -7,7 +7,6 @@ import { CartController } from './cart.controller';
 import { CartService } from './cart.service';
 import { CustomerController } from './customer.controller';
 import { CustomerService } from './customer.service';
-import { MarketplaceOrderController } from './order.controller';
 import { MarketplaceOrderService } from './order.service';
 
 @Module({
@@ -16,7 +15,6 @@ import { MarketplaceOrderService } from './order.service';
     CategoryController,
     CartController,
     CustomerController,
-    MarketplaceOrderController,
   ],
   providers: [
     ProductService,
@@ -25,6 +23,6 @@ import { MarketplaceOrderService } from './order.service';
     CustomerService,
     MarketplaceOrderService,
   ],
-  exports: [ProductService, CartService, CustomerService],
+  exports: [ProductService, CartService, CustomerService, MarketplaceOrderService],
 })
 export class MarketplaceModule {}

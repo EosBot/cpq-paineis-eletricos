@@ -34,6 +34,14 @@
         "nxtPconfigurationId": "nxtPconfigurationId"
       },
       "namedRegex": "^/configure/(?<nxtPconfigurationId>[^/]+?)(?:/)?$"
+    },
+    {
+      "page": "/products/[slug]",
+      "regex": "^/products/([^/]+?)(?:/)?$",
+      "routeKeys": {
+        "nxtPslug": "nxtPslug"
+      },
+      "namedRegex": "^/products/(?<nxtPslug>[^/]+?)(?:/)?$"
     }
   ],
   "staticRoutes": [
@@ -56,10 +64,70 @@
       "namedRegex": "^/admin(?:/)?$"
     },
     {
+      "page": "/cart",
+      "regex": "^/cart(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/cart(?:/)?$"
+    },
+    {
+      "page": "/configure",
+      "regex": "^/configure(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/configure(?:/)?$"
+    },
+    {
       "page": "/login",
       "regex": "^/login(?:/)?$",
       "routeKeys": {},
       "namedRegex": "^/login(?:/)?$"
+    },
+    {
+      "page": "/products",
+      "regex": "^/products(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/products(?:/)?$"
+    },
+    {
+      "page": "/seller",
+      "regex": "^/seller(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/seller(?:/)?$"
+    },
+    {
+      "page": "/seller/customers",
+      "regex": "^/seller/customers(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/seller/customers(?:/)?$"
+    },
+    {
+      "page": "/seller/financial",
+      "regex": "^/seller/financial(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/seller/financial(?:/)?$"
+    },
+    {
+      "page": "/seller/inventory",
+      "regex": "^/seller/inventory(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/seller/inventory(?:/)?$"
+    },
+    {
+      "page": "/seller/orders",
+      "regex": "^/seller/orders(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/seller/orders(?:/)?$"
+    },
+    {
+      "page": "/seller/products",
+      "regex": "^/seller/products(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/seller/products(?:/)?$"
+    },
+    {
+      "page": "/seller/suppliers",
+      "regex": "^/seller/suppliers(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/seller/suppliers(?:/)?$"
     }
   ],
   "dataRoutes": [],

@@ -40,6 +40,11 @@ export function createPrismaMock(overrides: DeepPartial<PrismaMock> = {}): Prism
     'shipment',
     'shippingQuote',
     'auditLog',
+    'product',
+    'productImage',
+    'cart',
+    'cartItem',
+    'customer',
   ];
 
   const mock: Record<string, jest.Mock> = {};

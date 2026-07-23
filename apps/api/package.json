@@ -2,6 +2,9 @@
   "name": "@cpq/api",
   "private": true,
   "version": "0.0.1",
+  "prisma": {
+    "seed": "ts-node --project tsconfig.seed.json prisma/seed.ts"
+  },
   "scripts": {
     "build": "nest build",
     "dev": "nest start --watch",

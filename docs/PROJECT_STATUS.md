@@ -112,7 +112,7 @@ Tenant (Lojista)
 - [x] Multi-tenant isolation (RLS + middleware)
 - [x] Auth system (JWT + NextAuth)
 - [x] CPQ module (configurações, componentes, pricing)
-- [ ] Product catalog (standard + CPQ configurable)
+- [x] Product catalog models + seed (46 componentes brasileiros reais)
 - [ ] Shopping cart
 - [ ] Checkout (mocked payment)
 - [ ] Order lifecycle
@@ -225,3 +225,5 @@ NEXT_PUBLIC_APP_NAME=CPQ Marketplace
 3. **3 apps frontend**: Storefront (público), Seller ERP (lojista), Admin (plataforma).
 4. **Pagamento mockado**: Checkout cria pedido sem processar pagamento real.
 5. **Isolamento**: Cada lojista vê apenas seus próprios dados via RLS.
+6. **Componentes brasileiros**: 46 componentes reais (WEG, ABB, Schneider, Phoenix Contact) com preços de mercado.
+7. **Migrations**: Banco sincronizado via `db push` + migrations marcadas como aplicadas para compatibilidade com Docker entrypoint.

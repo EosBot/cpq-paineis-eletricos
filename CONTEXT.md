@@ -1,5 +1,9 @@
 # Context
 
+> **Instruções globais do agente:** veja [AGENTS.md](./AGENTS.md) para regras fundamentais de precisão, segurança, processo e tomada de decisão.
+
+---
+
 ## Ubiquitous Language
 
 ### Tenant

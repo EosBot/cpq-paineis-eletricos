@@ -1,8 +1,19 @@
 {
   "/_not-found/page": "/_not-found",
   "/api/auth/[...nextauth]/route": "/api/auth/[...nextauth]",
-  "/admin/page": "/admin",
   "/configure/[configurationId]/page": "/configure/[configurationId]",
+  "/admin/page": "/admin",
+  "/configure/page": "/configure",
   "/login/page": "/login",
-  "/page": "/"
+  "/(storefront)/cart/page": "/cart",
+  "/(storefront)/page": "/",
+  "/(storefront)/products/[slug]/page": "/products/[slug]",
+  "/(storefront)/products/page": "/products",
+  "/seller/customers/page": "/seller/customers",
+  "/seller/financial/page": "/seller/financial",
+  "/seller/inventory/page": "/seller/inventory",
+  "/seller/orders/page": "/seller/orders",
+  "/seller/page": "/seller",
+  "/seller/products/page": "/seller/products",
+  "/seller/suppliers/page": "/seller/suppliers"
 }

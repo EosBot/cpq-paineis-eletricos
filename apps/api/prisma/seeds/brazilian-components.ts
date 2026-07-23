@@ -1,4 +1,4 @@
-import { PrismaClient, PoleCount, MountingType } from '@prisma/client';
+import { PrismaClient, PoleCount, MountingType, Prisma } from '@prisma/client';
 
 const prisma = new PrismaClient();
 
@@ -24,19 +24,19 @@ const CATEGORIES = [
 ];
 
 const COMPONENTS = [
-  { sku: 'ABB-S201-C6', name: 'Disjuntor S201-C6', brand: 'ABB', category: 'MCB', ratedCurrent: 6, poles: PoleCount.ONE_P, mountingType: MountingType.DIN_RAIL, moduleWidth: 1, typicalPrice: 28.5, ratedVoltage: '230/400V', breakingCapacity: '6kA', isActive: true },
-  { sku: 'ABB-S201-C10', name: 'Disjuntor S201-C10', brand: 'ABB', category: 'MCB', ratedCurrent: 10, poles: PoleCount.ONE_P, mountingType: MountingType.DIN_RAIL, moduleWidth: 1, typicalPrice: 28.5, ratedVoltage: '230/400V', breakingCapacity: '6kA', isActive: true },
-  { sku: 'ABB-S201-C16', name: 'Disjuntor S201-C16', brand: 'ABB', category: 'MCB', ratedCurrent: 16, poles: PoleCount.ONE_P, mountingType: MountingType.DIN_RAIL, moduleWidth: 1, typicalPrice: 28.5, ratedVoltage: '230/400V', breakingCapacity: '6kA', isActive: true },
-  { sku: 'ABB-S201-C20', name: 'Disjuntor S201-C20', brand: 'ABB', category: 'MCB', ratedCurrent: 20, poles: PoleCount.ONE_P, mountingType: MountingType.DIN_RAIL, moduleWidth: 1, typicalPrice: 28.5, ratedVoltage: '230/400V', breakingCapacity: '6kA', isActive: true },
-  { sku: 'ABB-S201-C32', name: 'Disjuntor S201-C32', brand: 'ABB', category: 'MCB', ratedCurrent: 32, poles: PoleCount.ONE_P, mountingType: MountingType.DIN_RAIL, moduleWidth: 1, typicalPrice: 32.0, ratedVoltage: '230/400V', breakingCapacity: '6kA', isActive: true },
-  { sku: 'ABB-S202-C16', name: 'Disjuntor S202-C16', brand: 'ABB', category: 'MCB', ratedCurrent: 16, poles: PoleCount.TWO_P, mountingType: MountingType.DIN_RAIL, moduleWidth: 2, typicalPrice: 65.0, ratedVoltage: '230/400V', breakingCapacity: '6kA', isActive: true },
-  { sku: 'ABB-S203-C16', name: 'Disjuntor S203-C16', brand: 'ABB', category: 'MCB', ratedCurrent: 16, poles: PoleCount.THREE_P, mountingType: MountingType.DIN_RAIL, moduleWidth: 3, typicalPrice: 95.0, ratedVoltage: '230/400V', breakingCapacity: '6kA', isActive: true },
-  { sku: 'ABB-T1B-125', name: 'Disjuntor Tmax T1B 125', brand: 'ABB', category: 'MCCB', ratedCurrent: 125, poles: PoleCount.THREE_P, mountingType: MountingType.FIXED, moduleWidth: 6, typicalPrice: 450.0, ratedVoltage: '690V', breakingCapacity: '25kA', isActive: true },
-  { sku: 'ABB-T2S-160', name: 'Disjuntor Tmax T2S 160', brand: 'ABB', category: 'MCCB', ratedCurrent: 160, poles: PoleCount.THREE_P, mountingType: MountingType.FIXED, moduleWidth: 8, typicalPrice: 680.0, ratedVoltage: '690V', breakingCapacity: '36kA', isActive: true },
-  { sku: 'ABB-T4S-250', name: 'Disjuntor Tmax T4S 250', brand: 'ABB', category: 'MCCB', ratedCurrent: 250, poles: PoleCount.THREE_P, mountingType: MountingType.FIXED, moduleWidth: 10, typicalPrice: 1200.0, ratedVoltage: '690V', breakingCapacity: '36kA', isActive: true },
-  { sku: 'SCH-EASY9-C16', name: 'Disjuntor Easy9 C16', brand: 'Schneider', category: 'MCB', ratedCurrent: 16, poles: PoleCount.ONE_P, mountingType: MountingType.DIN_RAIL, moduleWidth: 1, typicalPrice: 25.0, ratedVoltage: '230/400V', breakingCapacity: '4.5kA', isActive: true },
-  { sku: 'SCH-EASY9-C32', name: 'Disjuntor Easy9 C32', brand: 'Schneider', category: 'MCB', ratedCurrent: 32, poles: PoleCount.ONE_P, mountingType: MountingType.DIN_RAIL, moduleWidth: 1, typicalPrice: 32.0, ratedVoltage: '230/400V', breakingCapacity: '4.5kA', isActive: true },
-  { sku: 'SCH-NSX100F', name: 'Disjuntor Compact NSX100F', brand: 'Schneider', category: 'MCCB', ratedCurrent: 100, poles: PoleCount.THREE_P, mountingType: MountingType.FIXED, moduleWidth: 6, typicalPrice: 850.0, ratedVoltage: '690V', breakingCapacity: '36kA', isActive: true },
+  { sku: 'ABB-S201-C6', name: 'Disjuntor S201-C6', brand: 'ABB', category: 'MCB', ratedCurrent: 6, poles: PoleCount.ONE_P, mountingType: MountingType.DIN_RAIL, moduleWidth: 1, typicalPrice: 28.5, ratedVoltage: '230/400V', isActive: true },
+  { sku: 'ABB-S201-C10', name: 'Disjuntor S201-C10', brand: 'ABB', category: 'MCB', ratedCurrent: 10, poles: PoleCount.ONE_P, mountingType: MountingType.DIN_RAIL, moduleWidth: 1, typicalPrice: 28.5, ratedVoltage: '230/400V', isActive: true },
+  { sku: 'ABB-S201-C16', name: 'Disjuntor S201-C16', brand: 'ABB', category: 'MCB', ratedCurrent: 16, poles: PoleCount.ONE_P, mountingType: MountingType.DIN_RAIL, moduleWidth: 1, typicalPrice: 28.5, ratedVoltage: '230/400V', isActive: true },
+  { sku: 'ABB-S201-C20', name: 'Disjuntor S201-C20', brand: 'ABB', category: 'MCB', ratedCurrent: 20, poles: PoleCount.ONE_P, mountingType: MountingType.DIN_RAIL, moduleWidth: 1, typicalPrice: 28.5, ratedVoltage: '230/400V', isActive: true },
+  { sku: 'ABB-S201-C32', name: 'Disjuntor S201-C32', brand: 'ABB', category: 'MCB', ratedCurrent: 32, poles: PoleCount.ONE_P, mountingType: MountingType.DIN_RAIL, moduleWidth: 1, typicalPrice: 32.0, ratedVoltage: '230/400V', isActive: true },
+  { sku: 'ABB-S202-C16', name: 'Disjuntor S202-C16', brand: 'ABB', category: 'MCB', ratedCurrent: 16, poles: PoleCount.TWO_P, mountingType: MountingType.DIN_RAIL, moduleWidth: 2, typicalPrice: 65.0, ratedVoltage: '230/400V', isActive: true },
+  { sku: 'ABB-S203-C16', name: 'Disjuntor S203-C16', brand: 'ABB', category: 'MCB', ratedCurrent: 16, poles: PoleCount.THREE_P, mountingType: MountingType.DIN_RAIL, moduleWidth: 3, typicalPrice: 95.0, ratedVoltage: '230/400V', isActive: true },
+  { sku: 'ABB-T1B-125', name: 'Disjuntor Tmax T1B 125', brand: 'ABB', category: 'MCCB', ratedCurrent: 125, poles: PoleCount.THREE_P, mountingType: MountingType.PLATE, moduleWidth: 6, typicalPrice: 450.0, ratedVoltage: '690V', isActive: true },
+  { sku: 'ABB-T2S-160', name: 'Disjuntor Tmax T2S 160', brand: 'ABB', category: 'MCCB', ratedCurrent: 160, poles: PoleCount.THREE_P, mountingType: MountingType.PLATE, moduleWidth: 8, typicalPrice: 680.0, ratedVoltage: '690V', isActive: true },
+  { sku: 'ABB-T4S-250', name: 'Disjuntor Tmax T4S 250', brand: 'ABB', category: 'MCCB', ratedCurrent: 250, poles: PoleCount.THREE_P, mountingType: MountingType.PLATE, moduleWidth: 10, typicalPrice: 1200.0, ratedVoltage: '690V', isActive: true },
+  { sku: 'SCH-EASY9-C16', name: 'Disjuntor Easy9 C16', brand: 'Schneider', category: 'MCB', ratedCurrent: 16, poles: PoleCount.ONE_P, mountingType: MountingType.DIN_RAIL, moduleWidth: 1, typicalPrice: 25.0, ratedVoltage: '230/400V', isActive: true },
+  { sku: 'SCH-EASY9-C32', name: 'Disjuntor Easy9 C32', brand: 'Schneider', category: 'MCB', ratedCurrent: 32, poles: PoleCount.ONE_P, mountingType: MountingType.DIN_RAIL, moduleWidth: 1, typicalPrice: 32.0, ratedVoltage: '230/400V', isActive: true },
+  { sku: 'SCH-NSX100F', name: 'Disjuntor Compact NSX100F', brand: 'Schneider', category: 'MCCB', ratedCurrent: 100, poles: PoleCount.THREE_P, mountingType: MountingType.PLATE, moduleWidth: 6, typicalPrice: 850.0, ratedVoltage: '690V', isActive: true },
   { sku: 'WEG-CWC09', name: 'Contator CWC09', brand: 'WEG', category: 'CONTACTOR', ratedCurrent: 9, poles: PoleCount.THREE_P, mountingType: MountingType.DIN_RAIL, moduleWidth: 2, typicalPrice: 75.0, ratedVoltage: '220V', ac3Current: 4, isActive: true },
   { sku: 'WEG-CWC012', name: 'Contator CWC012', brand: 'WEG', category: 'CONTACTOR', ratedCurrent: 12, poles: PoleCount.THREE_P, mountingType: MountingType.DIN_RAIL, moduleWidth: 2, typicalPrice: 85.0, ratedVoltage: '220V', ac3Current: 5.5, isActive: true },
   { sku: 'WEG-CWC016', name: 'Contator CWC016', brand: 'WEG', category: 'CONTACTOR', ratedCurrent: 16, poles: PoleCount.THREE_P, mountingType: MountingType.DIN_RAIL, moduleWidth: 2, typicalPrice: 95.0, ratedVoltage: '220V', ac3Current: 7.5, isActive: true },
@@ -69,7 +69,7 @@ const COMPONENTS = [
   { sku: 'TR-CONTROL-100VA', name: 'Transformador 380/220V 100VA', brand: 'WEG', category: 'CONTROL_TRANSFORMER', ratedCurrent: null, poles: null, mountingType: MountingType.FLANGE, moduleWidth: 2, typicalPrice: 200.0, ratedVoltage: '380/220V', isActive: true },
   { sku: 'TR-CONTROL-500VA', name: 'Transformador 380/220V 500VA', brand: 'WEG', category: 'CONTROL_TRANSFORMER', ratedCurrent: null, poles: null, mountingType: MountingType.FLANGE, moduleWidth: 2, typicalPrice: 450.0, ratedVoltage: '380/220V', isActive: true },
   { sku: 'SCH-XB4BW33B5', name: 'Botoeira XB4BW33B5 Verde 1NO', brand: 'Schneider', category: 'PUSHBUTTON', ratedCurrent: null, poles: null, mountingType: MountingType.FLANGE, moduleWidth: 1, typicalPrice: 70.0, ratedVoltage: '24V', isActive: true },
-  { sku: 'WEG-MINI-NSX100F', name: 'Disjuntor WEG Mini NSX100F', brand: 'WEG', category: 'MCCB', ratedCurrent: 100, poles: PoleCount.THREE_P, mountingType: MountingType.FIXED, moduleWidth: 6, typicalPrice: 750.0, ratedVoltage: '690V', breakingCapacity: '25kA', isActive: true },
+  { sku: 'WEG-MINI-NSX100F', name: 'Disjuntor WEG Mini NSX100F', brand: 'WEG', category: 'MCCB', ratedCurrent: 100, poles: PoleCount.THREE_P, mountingType: MountingType.PLATE, moduleWidth: 6, typicalPrice: 750.0, ratedVoltage: '690V', isActive: true },
 ];
 
 async function seedBrazilianComponents() {
@@ -105,7 +105,6 @@ async function seedBrazilianComponents() {
         moduleWidth: comp.moduleWidth,
         typicalPrice: comp.typicalPrice ? new Prisma.Decimal(comp.typicalPrice) : undefined,
         ratedVoltage: comp.ratedVoltage,
-        breakingCapacity: comp.breakingCapacity,
         isActive: comp.isActive,
       },
       create: {
@@ -120,7 +119,6 @@ async function seedBrazilianComponents() {
         moduleWidth: comp.moduleWidth,
         typicalPrice: comp.typicalPrice ? new Prisma.Decimal(comp.typicalPrice) : undefined,
         ratedVoltage: comp.ratedVoltage,
-        breakingCapacity: comp.breakingCapacity,
         isActive: comp.isActive,
       },
     });

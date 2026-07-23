@@ -4,10 +4,12 @@ CREATE TYPE "ProductType" AS ENUM ('STANDARD', 'CPQ_CONFIGURABLE');
 -- CreateEnum
 CREATE TYPE "CartStatus" AS ENUM ('ACTIVE', 'CHECKOUT', 'COMPLETED', 'ABANDONED');
 
--- AlterEnum
+-- Add enum values in separate transactions before using them
+COMMIT;
 ALTER TYPE "OrderStatus" ADD VALUE 'PENDING';
 ALTER TYPE "OrderStatus" ADD VALUE 'CANCELLED';
 ALTER TYPE "OrderStatus" ADD VALUE 'REFUNDED';
+BEGIN;
 
 -- CreateTable
 CREATE TABLE "ProductImage" (
@@ -100,7 +102,6 @@ ALTER TABLE "Product" ADD COLUMN     "slug" VARCHAR(120);
 ALTER TABLE "Product" ADD COLUMN     "type" "ProductType" NOT NULL DEFAULT 'STANDARD';
 ALTER TABLE "Product" ADD COLUMN     "price" DECIMAL(18,4);
 ALTER TABLE "Product" ADD COLUMN     "metadata" JSONB;
-ALTER TABLE "Product" ADD COLUMN     "cpqTemplate" JSONB;
 ALTER TABLE "Product" ADD COLUMN     "categoryId" TEXT;
 
 -- AlterTable Order

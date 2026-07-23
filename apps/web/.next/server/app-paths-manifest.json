@@ -1,8 +1,19 @@
 {
   "/_not-found/page": "app/_not-found/page.js",
   "/api/auth/[...nextauth]/route": "app/api/auth/[...nextauth]/route.js",
-  "/admin/page": "app/admin/page.js",
   "/configure/[configurationId]/page": "app/configure/[configurationId]/page.js",
+  "/admin/page": "app/admin/page.js",
+  "/configure/page": "app/configure/page.js",
   "/login/page": "app/login/page.js",
-  "/page": "app/page.js"
+  "/(storefront)/cart/page": "app/(storefront)/cart/page.js",
+  "/(storefront)/page": "app/(storefront)/page.js",
+  "/(storefront)/products/[slug]/page": "app/(storefront)/products/[slug]/page.js",
+  "/(storefront)/products/page": "app/(storefront)/products/page.js",
+  "/seller/customers/page": "app/seller/customers/page.js",
+  "/seller/financial/page": "app/seller/financial/page.js",
+  "/seller/inventory/page": "app/seller/inventory/page.js",
+  "/seller/orders/page": "app/seller/orders/page.js",
+  "/seller/page": "app/seller/page.js",
+  "/seller/products/page": "app/seller/products/page.js",
+  "/seller/suppliers/page": "app/seller/suppliers/page.js"
 }
