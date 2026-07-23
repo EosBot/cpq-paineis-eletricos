@@ -9,6 +9,7 @@ import { Badge } from '@/components/ui/badge';
 import {
   useSellerProducts,
   useCreateSellerProduct,
+  useUpdateSellerProduct,
   useDeleteSellerProduct,
 } from '@/lib/api/hooks/use-seller';
 import type { Product } from '@/lib/api/types';
@@ -16,6 +17,7 @@ import type { Product } from '@/lib/api/types';
 export default function SellerProductsPage() {
   const { data, isLoading } = useSellerProducts({ limit: 50 });
   const createProduct = useCreateSellerProduct();
+  const updateProduct = useUpdateSellerProduct();
   const deleteProduct = useDeleteSellerProduct();
 
   const [search, setSearch] = useState('');
@@ -47,7 +49,7 @@ export default function SellerProductsPage() {
     };
 
     if (editingProduct) {
-      // Update not implemented in service yet
+      await updateProduct.mutateAsync({ id: editingProduct.id, data: payload });
     } else {
       await createProduct.mutateAsync(payload);
     }
@@ -185,7 +187,7 @@ export default function SellerProductsPage() {
                   <Button type="button" variant="outline" onClick={() => setShowForm(false)}>
                     Cancelar
                   </Button>
-                  <Button type="submit" disabled={createProduct.isPending}>
+                  <Button type="submit" disabled={createProduct.isPending || updateProduct.isPending}>
                     {createProduct.isPending ? 'Salvando...' : editingProduct ? 'Atualizar' : 'Criar'}
                   </Button>
                 </div>
