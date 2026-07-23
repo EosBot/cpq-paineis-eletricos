@@ -1,17 +1,17 @@
-# Progresso de Implementação — Fase 1 (Marketplace Foundation)
+# Progresso de Implementação — CPQ Marketplace
 
-> **Última atualização:** 22/07/2026
-> **Status:** Concluída (exceto admin order management — escopo da Fase 3)
+> **Última atualização:** 23/07/2026
+> **Branch atual:** `dev`
 
 ---
 
 ## Contexto
 
-Este documento registra o progresso detalhado da implementação da Fase 1 do roadmap. Objetivo: fechar o fluxo básico de marketplace (cart → checkout → order → confirmação) e integrar o builder CPQ ao carrinho.
+Este documento registra o progresso detalhado da implementação do CPQ Marketplace. O projeto é um SaaS multi-tenant de marketplace para fabricantes de painéis elétricos, com módulo CPQ integrado.
 
 ---
 
-## Prioridade 1 — Fluxo Básico de Checkout ✅ CONCLUÍDA
+## Fase 1 — Marketplace Foundation ✅ CONCLUÍDA
 
 ### Backend (NestJS)
 - **Cart Controller** (`apps/api/src/modules/marketplace/cart.controller.ts`) — CRUD completo.
@@ -24,61 +24,89 @@ Este documento registra o progresso detalhado da implementação da Fase 1 do ro
 - **Hooks** (`apps/web/src/lib/api/hooks/use-storefront.ts`) — `useCheckout()`, `useOrder()`, `useOrders()`.
 - **Página de Checkout** (`apps/web/src/app/(storefront)/checkout/page.tsx`) — Endereço, envio, observações, resumo, submissão.
 - **Página de Confirmação** (`apps/web/src/app/(storefront)/orders/[id]/confirmation/page.tsx`) — Detalhes do pedido, endereço, status.
-
----
-
-## Prioridade 2 — Integração Builder → Cart ✅ CONCLUÍDA
-
-### O que foi feito:
-- **productId passado via URL**: `?productId=xxx` na rota `/configure`.
-- **Builder store** (`apps/web/src/store/builder.ts`) — Adicionado `productId` ao estado.
-- **Configure page** (`apps/web/src/app/configure/[configurationId]/page.tsx`) — Lê `productId` da URL e seta no store.
-- **Pricing Sidebar** (`apps/web/src/components/builder/pricing-sidebar.tsx`) — Botão "Adicionar ao Carrinho" funcional.
-- **configurationData**: Todo o estado do builder (project, enclosure, rails, circuits, placements, pricing) é salvo como JSON no `configurationData` do cart item.
-
----
-
-## Prioridade 3 — Order Management ✅ CONCLUÍDA
-
-### O que foi feito:
-- **Conflito de rotas resolvido**: Consolidado `OrdersController` (CPQ) e `MarketplaceOrderController` em um único `OrdersController` em `apps/api/src/orders/orders.controller.ts`.
-- **Página de Detalhe** (`apps/web/src/app/(storefront)/orders/[id]/page.tsx`) — Items, pricing, endereço, timeline de progresso.
+- **Página de Produto** (`apps/web/src/app/(storefront)/products/[slug]/page.tsx`) — Detalhe individual, ações.
 - **Histórico de Pedidos** (`apps/web/src/app/(storefront)/account/orders/page.tsx`) — Lista pedidos do cliente com status.
 
----
-
-## Prioridade 4 — Testes ✅ CONCLUÍDA
-
-### Criados:
-- **cart.service.spec.ts** (`apps/api/src/modules/marketplace/cart.service.spec.ts`) — 13 testes.
-- **order.service.spec.ts** (`apps/api/src/modules/marketplace/order.service.spec.ts`) — 13 testes.
-
-### Total: 26 novos testes, 72 testes passando na suite completa.
+### Testes
+- **cart.service.spec.ts** — 13 testes.
+- **order.service.spec.ts** — 13 testes.
+- Total: 26 novos testes, 72 testes passando na suite completa.
 
 ---
 
-## Estrutura do Projeto — Limpeza
+## Fase 2 — Seller ERP 🚧 EM PROGRESSO
 
-### Dead code removido:
-- `apps/api/src/modules/marketplace/order.controller.ts` — **REMOVIDO** (consolidado).
+### Infraestrutura Completa
+- **Layout** (`apps/web/src/app/seller/layout.tsx`) — Sidebar, mobile menu, navegação.
+- **Hooks** (`apps/web/src/lib/api/hooks/use-seller.ts`) — 173 linhas, todos os mutations e queries.
+- **Services** (`apps/web/src/lib/api/services/seller.service.ts`) — 164 linhas, full CRUD.
+- **Types** (`apps/web/src/lib/api/types.ts`) — Tipos TypeScript completos (Customer, Supplier, Order, Financial, etc.).
 
-### Verificado sem problemas:
-- Todos os módulos e controllers estão corretamente conectados via NestJS DI.
-- Nenhum import órfão encontrado.
-- Nenhum módulo sem uso.
+### Páginas
+
+| Página | Arquivo | Status | O que falta |
+|--------|---------|--------|-------------|
+| Dashboard | `/seller/page.tsx` | ✅ | Funcional com KPIs reais |
+| Products | `/seller/products/page.tsx` | ✅ | CRUD completo (fix aplicado em 23/07) |
+| Orders | `/seller/orders/page.tsx` | 🚧 | Falta: avançar status, cancelar, filtro |
+| Inventory | `/seller/inventory/page.tsx` | 🚧 | Falta: movimentação de estoque |
+| Customers | `/seller/customers/page.tsx` | 🚧 | Falta: editar, deletar, detalhes |
+| Suppliers | `/seller/suppliers/page.tsx` | 🚧 | Falta: editar, deletar |
+| Financial | `/seller/financial/page.tsx` | 🚧 | Falta: criar transação, filtros |
+
+### O que foi feito em 23/07/2026:
+- ✅ **Products Page Update Fix**: Conectado `useUpdateSellerProduct` ao form de edição (commit `e583f51`)
+  - Adicionado import do mutation
+  - Declarado `const updateProduct = useUpdateSellerProduct()`
+  - Preenchido `if (editingProduct)` com `mutateAsync({ id, data })`
+  - Botão submit desabilitado no update
 
 ---
 
-## Skills do OpenCode
+## Organização do Repositório (23/07/2026)
 
-**Problema**: Skills estavam em `~/.config/opencode/skills/` (WSL) mas o opencode server roda no Windows e procura em `%USERPROFILE%\.config\opencode\skills\`. Skills de `.agents/` também não estavam instaladas.
+### Branches
 
-**Solução**:
-1. Copiado 66 skills do WSL para Windows: `C:\Users\thali\.config\opencode\skills\`.
-2. Instalado 146 skills de `.agents/awesome-zoocode-skills/skills/` (engenharia, design, produtividade, composio).
-3. Total: **216 skills** no Windows.
-4. Configurado `permission.skill.*: "allow"` no `opencode.json`.
-5. **Ação pendente do usuário**: Reiniciar o opencode server para carregar as skills.
+| Branch | Propósito | Tracking |
+|--------|-----------|----------|
+| `main` | Produção estável | `origin/main` ✅ |
+| `dev` | Desenvolvimento ativo | `origin/dev` ✅ |
+| `prod` | Releases de produção | `origin/prod` ✅ |
+
+### Mudanças
+- Renomeado `master` → `main` (padrão GitHub)
+- Criados branches `dev` e `prod` a partir do estado atual
+- Todas as branches sincronizadas com `origin`
+- Commit `e583f51`: fix(seller): connect update mutation to products page form
+
+---
+
+## Fase 3 — Admin Platform 🚧 PARCIAL
+
+- Backend completo (super-admin, tenants, users, billing)
+- Frontend: implementado mas não verificado a fundo
+
+---
+
+## Fase 4 — Integration & Polish 📋 PLANEJADO
+
+- Payment gateway integration
+- Email notifications
+- File uploads (product images)
+- E2E tests (Playwright)
+- CI/CD pipeline
+- VPS deployment
+- Monitoring (Prometheus/Grafana)
+
+---
+
+## Próximos Passos Imediatos
+
+1. **Orders Page** — Adicionar botões "Avançar Status" e "Cancelar", filtro por status
+2. **Inventory Page** — Modal de movimentação de estoque (entrada/saída)
+3. **Customers Page** — Editar, deletar, visualizar histórico
+4. **Suppliers Page** — Editar, deletar
+5. **Financial Page** — Criar transação, filtro por período, gerenciar contas
 
 ---
 
@@ -88,14 +116,3 @@ Este documento registra o progresso detalhado da implementação da Fase 1 do ro
 - **Multi-tenant**: interceptor global aplica `tenantId`. Nunca adicionar `tenantId` manualmente.
 - **Pagamento mockado**: checkout cria pedido sem processar pagamento real.
 - **configurationData**: abordagem de salvar JSON completo no cart item evita necessidade de API de configuração separada.
-
----
-
-## Próximos Passos (Fase 2 — Seller ERP)
-1. Cadastro self-service do vendedor
-2. CRUD de produtos (seller frontend)
-3. Gestão de pedidos (seller frontend — já existe `/seller/orders`)
-4. Gestão de estoque
-5. Gestão de clientes
-6. Módulo financeiro
-7. Relatórios e analytics
