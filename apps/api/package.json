@@ -33,7 +33,7 @@
     "@nestjs/throttler": "^6.5.0",
     "@prisma/client": "^5.19.1",
     "argon2": "^0.40.3",
-    "body-parser": "^1.20.3",
+    "body-parser": "^1.20.9",
     "class-transformer": "^0.5.1",
     "class-validator": "^0.14.1",
     "helmet": "^8.3.0",
